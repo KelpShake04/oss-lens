@@ -1,130 +1,36 @@
-"""명령행 진입점: oss-lens scan <폴더|GitHub URL>, oss-lens doctor."""
+"""명령행 진입점: oss-lens scan | show | doctor | web."""
 
 from __future__ import annotations
 
 import argparse
 import json
-import re
 import shutil
 import sys
-from datetime import datetime
 from pathlib import Path
 
-from . import __version__, licenses, parsers, risk, scanner
-from .llm import DEFAULT_MODEL, Explainer, OllamaClient
-from .models import SEVERITY_KO, Report, Vulnerability
-from .report import render_html, render_json
-
-GITHUB_URL = re.compile(r"^https://github\.com/[\w.-]+/[\w.-]+(\.git)?/?$")
+from . import __version__, pipeline, risk, scanner
+from .llm import DEFAULT_MODEL, OllamaClient
+from .models import SEVERITY_KO, Vulnerability
 
 
 def log(msg: str) -> None:
     print(msg, file=sys.stderr, flush=True)
 
 
-def _target_name(target: str) -> str:
-    name = target.rstrip("/").split("/")[-1].removesuffix(".git")
-    return re.sub(r"[^\w.-]", "_", name) or "target"
-
-
 def cmd_scan(args: argparse.Namespace) -> int:
-    clone_root = None
-    target = args.target
+    opts = pipeline.ScanOptions(
+        target=args.target, out=args.out, top=args.top, use_llm=not args.no_llm, model=args.model,
+        ollama_host=args.ollama_host, project_license=args.project_license,
+        remote_licenses=args.remote_licenses, sbom=args.sbom, grype_json=args.grype_json,
+    )
     try:
-        if GITHUB_URL.match(target):
-            log(f"GitHub 저장소 복제 중: {target}")
-            src = scanner.clone_github(target)
-            clone_root = src.parent
-        else:
-            src = Path(target).expanduser().resolve()
-            if not src.is_dir():
-                log(f"폴더가 아닙니다: {target}")
-                return 1
-
-        out_dir = Path(args.out) / (_target_name(target) if clone_root else _target_name(src.name))
-        out_dir.mkdir(parents=True, exist_ok=True)
-
-        # 1) SBOM
-        if args.sbom:
-            sbom_path = Path(args.sbom)
-            sbom = json.loads(sbom_path.read_text(encoding="utf-8"))
-        else:
-            sbom_path = out_dir / "sbom.json"
-            log("1/4 SBOM 생성 중 (syft)...")
-            sbom = scanner.run_syft(src, sbom_path, remote_licenses=args.remote_licenses)
-        packages = parsers.parse_syft(sbom, first_party=scanner.first_party_packages(src))
-
-        # 검사에서 조용히 빠지는 의존성을 알린다 ('취약점 0건'이 '안전'으로 읽히지 않게)
-        notes = scanner.coverage_gaps(src)
-        if not packages:
-            notes.insert(0, "오픈소스 패키지를 하나도 찾지 못했습니다. 취약점 0건은 '안전'이 아니라 "
-                            "'검사하지 못함'일 수 있습니다. lock 파일(package-lock.json, poetry.lock 등)이나 "
-                            "버전이 고정된 requirements.txt 가 있는지 확인하세요.")
-        for note in notes:
-            log(f"  ! {note}")
-
-        # 2) 취약점
-        if args.grype_json:
-            vuln_data = json.loads(Path(args.grype_json).read_text(encoding="utf-8"))
-        else:
-            log(f"2/4 취약점 검사 중 (grype, 패키지 {len(packages)}개)...")
-            vuln_data = scanner.run_grype(sbom_path, out_dir / "grype.json")
-        vulns = risk.rank(parsers.parse_grype(vuln_data))
-
-        # 3) 라이선스
-        log("3/4 라이선스 점검 중...")
-        project_license = args.project_license or licenses.detect_project_license(src)
-        license_findings = licenses.evaluate(packages, project_license)
-
-        # 4) 해설
-        client = None
-        if not args.no_llm:
-            client = OllamaClient(host=args.ollama_host, model=args.model)
-            reason = client.check()
-            if reason:
-                notes.append(f"{reason} → 규칙 기반 설명으로 대체했습니다.")
-                log(f"  ! {reason} (규칙 기반 설명으로 대체)")
-                client = None
-        explainer = Explainer(client, cache_path=out_dir / "llm-cache.json")
-        top = risk.pick_top(vulns, args.top)
-        explanations = {}
-        for i, v in enumerate(top, 1):
-            log(f"4/4 해설 생성 중 [{i}/{len(top)}] {v.package} {v.id}")
-            explanations[risk.vuln_key(v)] = explainer.explain(v)
-        if explainer.errors:
-            notes.append(f"LLM 해설 실패 {len(explainer.errors)}건은 규칙 기반 설명으로 대체했습니다.")
-
-        report = Report(
-            target=target,
-            project_license=project_license,
-            packages=packages,
-            vulnerabilities=vulns,
-            license_findings=license_findings,
-            explanations=explanations,
-            top_keys=[risk.vuln_key(v) for v in top],
-            generated_at=datetime.now().astimezone().strftime("%Y-%m-%d %H:%M"),
-            tool_versions={
-                "syft": parsers.descriptor_version(sbom) or "?",
-                "grype": parsers.descriptor_version(vuln_data) or "?",
-            },
-            llm_model=client.model if client else None,
-            notes=notes,
-        )
-        html_path = out_dir / "report.html"
-        html_path.write_text(render_html(report), encoding="utf-8")
-        (out_dir / "report.json").write_text(render_json(report), encoding="utf-8")
-
-        crit_high = sum(1 for v in vulns if v.severity in ("Critical", "High"))
-        lic_high = sum(1 for f in license_findings if f.level == "high")
-        print(f"패키지 {len(packages)}개 · 취약점 {len(vulns)}건 (치명·높음 {crit_high}건) · 라이선스 위험 {lic_high}건")
-        print(f"리포트: {html_path}")
-        return 0
+        result = pipeline.run(opts, progress=lambda msg, frac: log(msg) if frac < 1 else None)
     except scanner.ScanError as e:
         log(f"오류: {e}")
         return 1
-    finally:
-        if clone_root:
-            shutil.rmtree(clone_root, ignore_errors=True)
+    print(result.summary())
+    print(f"리포트: {result.html_path}")
+    return 0
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
@@ -172,6 +78,18 @@ def cmd_show(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_web(args: argparse.Namespace) -> int:
+    from .web import serve
+
+    try:
+        serve(out=args.out, host=args.host, port=args.port, open_browser=not args.no_browser,
+              model=args.model, ollama_host=args.ollama_host, view_only=args.view_only)
+    except OSError as e:  # 포트 사용 중 등
+        log(f"웹 서버를 시작할 수 없습니다: {e} (--port 로 다른 포트를 지정하세요)")
+        return 1
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="oss-lens", description="오픈소스 의존성 보안·라이선스 진단기")
     p.add_argument("--version", action="version", version=f"oss-lens {__version__}")
@@ -202,6 +120,17 @@ def build_parser() -> argparse.ArgumentParser:
     sh.add_argument("path", help="결과 폴더(out/<이름>) 또는 report.json")
     sh.add_argument("--source", action="store_true", help="취약점 원문 설명(영어)도 함께 출력")
     sh.set_defaults(func=cmd_show)
+
+    w = sub.add_parser("web", help="브라우저에서 쓰는 웹 UI 실행")
+    w.add_argument("-o", "--out", default="out", help="리포트 저장 폴더 (기본 out/)")
+    w.add_argument("--port", type=int, default=8765, help="포트 (기본 8765)")
+    w.add_argument("--host", default="127.0.0.1",
+                   help="기본 127.0.0.1(이 컴퓨터만). 0.0.0.0 이면 같은 네트워크에 공유(GitHub 주소만 검사)")
+    w.add_argument("--no-browser", action="store_true", help="브라우저를 자동으로 열지 않음")
+    w.add_argument("--view-only", action="store_true",
+                   help="검사 기능을 끄고 리포트만 보여줌 (syft·grype·Ollama 없는 기기용, 예: 안드로이드 공기계)")
+    llm_opts(w)
+    w.set_defaults(func=cmd_web)
     return p
 
 
