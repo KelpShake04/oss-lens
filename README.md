@@ -14,11 +14,18 @@
 
 ## 설치
 ```bash
-brew install syft grype          # SBOM·취약점 도구
+brew install syft grype                       # SBOM·취약점 도구
 brew install ollama && ollama pull qwen3:8b   # (선택) 한국어 AI 해설
-pip install -e .                 # Python 3.10+, 외부 패키지 의존성 없음
-oss-lens doctor                  # 설치 상태 확인
+
+git clone https://github.com/KelpShake04/oss-lens.git
+cd oss-lens                                   # 이후 명령은 모두 이 폴더에서
+python3 -m venv .venv && source .venv/bin/activate
+pip install -U pip                            # 맥 기본 pip(21.x)는 editable 설치를 못 함
+pip install -e .                              # Python 3.9+, 외부 패키지 의존성 없음
+oss-lens doctor                               # 설치 상태 확인
 ```
+새 터미널을 열 때마다 `source .venv/bin/activate` 를 먼저 실행한다.
+설치 없이 저장소 폴더에서 `python3 -m oss_lens doctor` 처럼 실행해도 된다.
 
 ## 사용
 ```bash
