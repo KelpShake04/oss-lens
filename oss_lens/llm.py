@@ -250,6 +250,10 @@ def build_prompt(v: Vulnerability) -> str:
     conds = risk_conditions(v.description)
     if conds:
         lines.append(f"위험 조건(원문): {' / '.join(conds)}")
+        # postprocess 가 임시 대응에서 이 이름을 찾으므로 모델에게도 그대로 알려 준다
+        anchors = key_terms(" ".join(conds), v.package)
+        target = f"'{', '.join(anchors)}' 를 넣어 " if anchors else ""
+        lines.append(f"→ action 2단계에 {target}이 조건을 피하는 임시 대응을 쓴다")
     else:
         lines.append("위험 조건: 없음 (임시 대응 단계를 쓰지 않는다)")
     lines.append(f"원문 설명(영어): {v.description[:1500] or '없음'}")

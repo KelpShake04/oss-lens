@@ -220,7 +220,11 @@ def test_build_prompt_gives_terms_and_conditions():
     p = build_prompt(_v(description=DJANGO))
     assert "원문 핵심 용어(summary 에 그대로 쓴다): QuerySet.order_by" in p
     assert "위험 조건(원문): if order_by is untrusted input" in p
+    assert "→ action 2단계에 'order_by' 를 넣어 이 조건을 피하는 임시 대응을 쓴다" in p
+    assert "'full_load, FullLoader' 를 넣어" in build_prompt(_v(description=PYYAML))
     assert "위험 조건: 없음" in build_prompt(_v(description=PILLOW))
+    # 조건에 함수 이름이 없으면 이름 없이 지시한다 (moment 예시)
+    assert "→ action 2단계에 이 조건을 피하는" in build_prompt(EXAMPLES[1][0])
 
 
 def test_rule_explanation():
