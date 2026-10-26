@@ -21,30 +21,62 @@ SYSTEM_PROMPT = """너는 오픈소스 보안 전문가다. 보안 지식이 많
 
 규칙:
 1. 한국어 존댓말(~합니다, ~하세요)로만 쓴다. 반말(~다, ~해라)은 쓰지 않는다.
-2. 원문 설명과 주어진 정보에 있는 사실만 쓴다. 원문에 없는 피해(코드 실행, 데이터 유출 등)나 버전·수치를 추측해 덧붙이지 않는다.
-3. 전문용어는 처음 나올 때 괄호로 짧게 풀어 쓴다.
-4. 업그레이드 명령어는 리포트에 따로 표시되므로 쓰지 않는다. 버전 번호만 쓴다.
-5. JSON 으로만 답한다.
+2. 원문 설명과 주어진 정보에 있는 사실만 쓴다. 버전·수치를 추측하지 않는다.
+   원문에 code execution, command 같은 표현이 없으면 '코드 실행'이라고 쓰지 않는다.
+3. 원문에 나온 함수·옵션·조건 이름(예: order_by, full_load)은 영어 그대로 summary 에 넣는다.
+4. 전문용어는 처음 나올 때 괄호로 짧게 풀어 쓴다.
+5. 업그레이드 명령어는 리포트에 따로 표시되므로 쓰지 않는다. 버전 번호만 쓴다.
+6. JSON 으로만 답한다.
 
 항목:
 - summary: 어떤 기능에서 무엇이 문제인지 한 문장.
 - impact: 공격자가 할 수 있는 일과 그 결과를 2문장으로.
-- action: 번호를 붙여 2~3단계. 1) 올릴 버전 2) 업그레이드 전 임시 대응(원문에 근거가 있을 때만) 3) 업그레이드 후 확인할 점."""
+- action: 번호를 붙인 단계.
+  1) 올릴 버전.
+  2) 원문에 우회 방법이나 위험 조건(예: 특정 함수에 사용자 입력을 넣을 때)이 있으면 그에 맞춘 임시 대응. 없으면 이 단계는 뺀다.
+  마지막) 업그레이드 후 확인할 점."""
 
-# 말투·길이를 맞추기 위한 예시 한 쌍 (데모 프로젝트에 없는 취약점)
-EXAMPLE_VULN = Vulnerability(
-    id="CVE-2021-3807", severity="High", package="ansi-regex", version="5.0.0", pkg_type="npm",
-    cvss_score=7.5, fix_versions=["5.0.1"], aliases=["GHSA-93q8-gq69-wqmw"],
-    locations=["/package-lock.json"],
-    description="ansi-regex is vulnerable to Inefficient Regular Expression Complexity",
-)
-EXAMPLE_ANSWER = {
-    "summary": "ansi-regex 의 정규식이 특정 문자열에서 매우 느리게 동작하는 문제(ReDoS, 정규식 서비스 거부)가 있습니다.",
-    "impact": "공격자가 조작한 문자열을 넣으면 정규식 처리에 CPU 를 오래 쓰게 만들 수 있습니다. "
-              "그 결과 서버나 CLI 도구의 응답이 느려지거나 멈출 수 있습니다.",
-    "action": "1) ansi-regex 를 5.0.1 이상으로 올리세요. 다른 패키지가 끌어온 간접 의존성이면 그 상위 패키지를 업데이트하세요. "
-              "2) 업그레이드 후 터미널 출력 관련 기능이 정상인지 테스트하세요.",
-}
+# 말투·길이·형식을 맞추기 위한 예시 (데모 프로젝트에 없는 취약점).
+# 임시 대응 근거가 없는 경우와 있는 경우를 하나씩 보여준다.
+EXAMPLES = [
+    (
+        Vulnerability(
+            id="CVE-2021-3807", severity="High", package="ansi-regex", version="5.0.0", pkg_type="npm",
+            cvss_score=7.5, fix_versions=["5.0.1"], aliases=["GHSA-93q8-gq69-wqmw"],
+            locations=["/package-lock.json"],
+            description="ansi-regex is vulnerable to Inefficient Regular Expression Complexity",
+        ),
+        {
+            "summary": "ansi-regex의 정규식이 특정 문자열에서 매우 느리게 동작하는 정규식 서비스 거부(ReDoS) 취약점이 있습니다.",
+            "impact": "공격자가 조작한 문자열을 넣으면 정규식 처리에 CPU를 오래 쓰게 만들 수 있습니다. "
+                      "그 결과 서버나 CLI 도구의 응답이 느려지거나 멈출 수 있습니다.",
+            "action": "1) ansi-regex를 5.0.1 이상으로 올리세요. "
+                      "2) 업그레이드 후 터미널 출력 관련 기능이 정상인지 테스트하세요.",
+        },
+    ),
+    (
+        Vulnerability(
+            id="CVE-2022-24785", severity="High", package="moment", version="2.29.1", pkg_type="npm",
+            cvss_score=7.5, fix_versions=["2.29.2"], aliases=["GHSA-8hfj-j24r-96c4"],
+            locations=["/package-lock.json"],
+            description="Moment.js is a JavaScript date library for parsing, validating, manipulating, and "
+                        "formatting dates. A path traversal vulnerability impacts npm (server) users of Moment.js "
+                        "between versions 1.0.1 and 2.29.1, especially if a user-provided locale string is "
+                        "directly used to switch moment locale. This problem is patched in 2.29.2, and the patch "
+                        "can be applied to all affected versions. As a workaround, sanitize the user-provided "
+                        "locale name before passing it to Moment.js.",
+        ),
+        {
+            "summary": "moment에서 사용자가 보낸 locale(언어 설정) 문자열로 언어를 바꾸면 파일 경로를 조작할 수 있는 "
+                       "경로 조작(Path Traversal) 취약점이 있습니다.",
+            "impact": "공격자가 locale 값에 경로 문자열을 넣으면 서버가 의도하지 않은 경로의 파일을 불러오게 만들 수 있습니다. "
+                      "사용자 입력을 locale로 그대로 쓰는 서버(npm) 환경이 영향을 받습니다.",
+            "action": "1) moment를 2.29.2 이상으로 올리세요. "
+                      "2) 바로 올리기 어렵다면 사용자가 보낸 locale 이름을 허용 목록으로 검사한 뒤 moment에 넘기세요. "
+                      "3) 업그레이드 후 날짜 표시와 언어 전환 기능이 정상인지 테스트하세요.",
+        },
+    ),
+]
 
 KEV_SENTENCE = "실제 공격에 악용된 적이 있는 취약점입니다(CISA KEV)."
 
@@ -169,12 +201,12 @@ def build_prompt(v: Vulnerability) -> str:
 
 
 def build_messages(v: Vulnerability) -> list[dict]:
-    return [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": build_prompt(EXAMPLE_VULN)},
-        {"role": "assistant", "content": json.dumps(EXAMPLE_ANSWER, ensure_ascii=False)},
-        {"role": "user", "content": build_prompt(v)},
-    ]
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    for example, answer in EXAMPLES:
+        messages.append({"role": "user", "content": build_prompt(example)})
+        messages.append({"role": "assistant", "content": json.dumps(answer, ensure_ascii=False)})
+    messages.append({"role": "user", "content": build_prompt(v)})
+    return messages
 
 
 def _ensure_kev(v: Vulnerability, parsed: dict) -> dict:

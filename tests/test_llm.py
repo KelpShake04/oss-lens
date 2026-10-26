@@ -6,7 +6,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import pytest
 
 from oss_lens.llm import (
-    EXAMPLE_ANSWER,
+    EXAMPLES,
     KEV_SENTENCE,
     SYSTEM_PROMPT,
     Explainer,
@@ -72,21 +72,32 @@ def test_build_prompt_includes_facts():
     assert "패치 버전: 없음" in build_prompt(_v(fix_versions=[]))
 
 
-def test_build_messages_has_example_turn():
+def test_build_messages_has_example_turns():
     msgs = build_messages(_v())
-    assert [m["role"] for m in msgs] == ["system", "user", "assistant", "user"]
+    assert [m["role"] for m in msgs] == ["system"] + ["user", "assistant"] * len(EXAMPLES) + ["user"]
     assert msgs[0]["content"] == SYSTEM_PROMPT
     assert "ansi-regex" in msgs[1]["content"]
-    assert json.loads(msgs[2]["content"]) == EXAMPLE_ANSWER
-    assert "minimist" in msgs[3]["content"]
+    assert json.loads(msgs[2]["content"]) == EXAMPLES[0][1]
+    assert "moment" in msgs[3]["content"]
+    assert "minimist" in msgs[-1]["content"]
 
 
-def test_example_answer_follows_own_rules():
-    text = " ".join(EXAMPLE_ANSWER.values())
+@pytest.mark.parametrize("vuln,answer", EXAMPLES, ids=[v.package for v, _ in EXAMPLES])
+def test_examples_follow_own_rules(vuln, answer):
+    text = " ".join(answer.values())
     assert "npm install" not in text
     # 존댓말만 사용 (문장 끝이 '다.' 이면 '니다.' 여야 함)
     for sentence in re.findall(r"[^.]*다\.", text):
         assert sentence.endswith("니다."), sentence
+    # 원문에 없는 '코드 실행'을 예시가 먼저 쓰면 모델도 따라 한다
+    if "execut" not in vuln.description.lower():
+        assert "코드 실행" not in text
+    assert answer["action"].startswith(f"1) {vuln.package}를 {vuln.fix_versions[0]} 이상으로 올리세요.")
+
+
+def test_examples_cover_with_and_without_workaround():
+    steps = [len(re.findall(r"\d\) ", answer["action"])) for _, answer in EXAMPLES]
+    assert sorted(steps) == [2, 3]
 
 
 def test_rule_explanation():
@@ -188,7 +199,7 @@ def test_ollama_client_roundtrip(ollama_server):
     assert req["model"] == "qwen3:8b"
     assert req["stream"] is False and req["think"] is False
     assert req["format"]["required"] == ["summary", "impact", "action"]
-    assert [m["role"] for m in req["messages"]] == ["system", "user", "assistant", "user"]
+    assert req["messages"] == build_messages(_v())
 
 
 def test_ollama_client_unreachable():
