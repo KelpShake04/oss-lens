@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # 안드로이드 공기계(Termux)에 oss-lens 보기 전용 웹 서버를 설치한다. 폰의 Termux 에서 실행:
 #   pkg install -y git && git clone https://github.com/KelpShake04/oss-lens ~/oss-lens && bash ~/oss-lens/scripts/termux-setup.sh
+#   (저장소가 비공개면 git clone 대신: pkg install -y gh && gh auth login && gh repo clone KelpShake04/oss-lens ~/oss-lens)
 # 자세한 안내: docs/deploy-android.md
 set -euo pipefail
 

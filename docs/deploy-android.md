@@ -18,6 +18,14 @@
 
 ## 2. 폰에서 설치
 Termux 를 열고 입력한다. 중간에 SSH 비밀번호를 두 번 묻는다 (맥에서 리포트를 올릴 때 쓴다).
+
+저장소가 **비공개**일 때 (지금): GitHub 로그인은 `gh` 가 화면에 보여 주는 코드를 브라우저에 넣어 승인하는 방식이라
+폰에서 비밀번호·토큰을 칠 필요가 없다. 질문이 나오면 GitHub.com → HTTPS → Git 인증 Yes → 브라우저 로그인을 고른다.
+```bash
+pkg install -y git gh && gh auth login && gh repo clone KelpShake04/oss-lens ~/oss-lens && bash ~/oss-lens/scripts/termux-setup.sh
+```
+
+저장소를 **공개**한 뒤에는 로그인 없이:
 ```bash
 pkg install -y git && git clone https://github.com/KelpShake04/oss-lens ~/oss-lens && bash ~/oss-lens/scripts/termux-setup.sh
 ```
