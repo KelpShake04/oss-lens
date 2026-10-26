@@ -73,6 +73,14 @@ def test_long_vuln_table_is_collapsed():
     assert html.count('<tr data-sev="High"') == 25
 
 
+def test_action_steps_rendered_on_separate_lines():
+    v = Vulnerability(id="CVE-1", severity="High", package="p", version="1", pkg_type="npm")
+    ex = Explanation("s", "i", "1) 올리세요. 2) <b>확인</b>하세요. 3) 테스트하세요.", "llm")
+    r = Report(target="t", project_license=None, packages=[], vulnerabilities=[v], license_findings=[],
+               explanations={"CVE-1|p|1": ex}, top_keys=["CVE-1|p|1"], generated_at="now")
+    assert "1) 올리세요.<br>2) &lt;b&gt;확인&lt;/b&gt;하세요.<br>3) 테스트하세요." in render_html(r)
+
+
 def test_html_escapes_untrusted_text():
     evil = "<script>alert(1)</script>"
     v = Vulnerability(id="CVE-1", severity="High", package=evil, version="1", pkg_type="npm",

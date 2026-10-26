@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import re
 from html import escape
 from pathlib import Path
 
@@ -26,6 +27,11 @@ VULN_TABLE_OPEN_MAX = 20  # 이보다 많으면 전체 취약점 표를 접어�
 
 def _e(s) -> str:
     return escape(str(s), quote=True)
+
+
+def _steps(text: str) -> str:
+    """'1) ... 2) ...' 형태의 조치 단계를 줄바꿈해서 보여준다."""
+    return re.sub(r"\s+(?=[2-9]\)\s)", "<br>", _e(text))
 
 
 def _sev_badge(sev: str) -> str:
@@ -102,7 +108,7 @@ def _top_section(r: Report) -> str:
     <p class="summary">{_e(ex.summary)}</p>
     <dl>
       <dt>영향</dt><dd>{_e(ex.impact)}</dd>
-      <dt>조치</dt><dd>{_e(ex.action)}</dd>
+      <dt>조치</dt><dd>{_steps(ex.action)}</dd>
     </dl>"""
         fix = ""
         if cmd:

@@ -1,12 +1,17 @@
 import json
+import re
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
 
 from oss_lens.llm import (
+    EXAMPLE_ANSWER,
+    KEV_SENTENCE,
+    SYSTEM_PROMPT,
     Explainer,
     OllamaClient,
+    build_messages,
     build_prompt,
     normalize_host,
     parse_response,
@@ -41,6 +46,7 @@ def test_normalize_host(raw, expected):
 def test_vuln_type_ko():
     assert vuln_type_ko("Prototype Pollution in x").startswith("프로토타입 오염")
     assert vuln_type_ko("allows server-side template injection ... arbitrary OS command").startswith("템플릿 주입")
+    assert vuln_type_ko("Inefficient Regular Expression Complexity").startswith("정규식 서비스 거부")
     assert vuln_type_ko("nothing here") is None
 
 
@@ -58,8 +64,29 @@ def test_build_prompt_includes_facts():
     assert "GHSA-xvch-5gv4-984h" in p
     assert "CVSS 9.8" in p
     assert "1.2%" in p
-    assert "npm install minimist@^1.2.6" in p
+    assert "패치 버전: 1.2.6 이상" in p
+    assert "npm install" not in p  # 명령어는 리포트가 따로 보여준다 (모델이 잘라먹던 문제)
     assert "/package-lock.json" in p
+    assert "CISA KEV): 없음" in p
+    assert KEV_SENTENCE in build_prompt(_v(known_exploited=True))
+    assert "패치 버전: 없음" in build_prompt(_v(fix_versions=[]))
+
+
+def test_build_messages_has_example_turn():
+    msgs = build_messages(_v())
+    assert [m["role"] for m in msgs] == ["system", "user", "assistant", "user"]
+    assert msgs[0]["content"] == SYSTEM_PROMPT
+    assert "ansi-regex" in msgs[1]["content"]
+    assert json.loads(msgs[2]["content"]) == EXAMPLE_ANSWER
+    assert "minimist" in msgs[3]["content"]
+
+
+def test_example_answer_follows_own_rules():
+    text = " ".join(EXAMPLE_ANSWER.values())
+    assert "npm install" not in text
+    # 존댓말만 사용 (문장 끝이 '다.' 이면 '니다.' 여야 함)
+    for sentence in re.findall(r"[^.]*다\.", text):
+        assert sentence.endswith("니다."), sentence
 
 
 def test_rule_explanation():
@@ -79,7 +106,7 @@ class FakeClient:
         self.reply = reply
         self.calls = 0
 
-    def chat(self, system, user):
+    def chat(self, messages):
         self.calls += 1
         if isinstance(self.reply, Exception):
             raise self.reply
@@ -97,6 +124,16 @@ def test_explainer_uses_llm_and_cache(tmp_path):
     client2 = FakeClient(OSError("down"))
     ex2 = Explainer(client2, cache).explain(_v())
     assert ex2.summary == "요약" and client2.calls == 0  # 캐시 적중
+
+
+def test_explainer_adds_kev_sentence_when_model_omits_it():
+    reply = json.dumps({"summary": "요약", "impact": "메모리가 손상됩니다.", "action": "조치"})
+    ex = Explainer(FakeClient(reply)).explain(_v(known_exploited=True))
+    assert ex.impact == f"{KEV_SENTENCE} 메모리가 손상됩니다."
+    # 모델이 이미 언급했으면 중복으로 붙이지 않는다
+    reply = json.dumps({"summary": "요약", "impact": "실제 공격에 쓰였습니다.", "action": "조치"})
+    assert Explainer(FakeClient(reply)).explain(_v(known_exploited=True)).impact == "실제 공격에 쓰였습니다."
+    assert Explainer(FakeClient(reply)).explain(_v()).impact == "실제 공격에 쓰였습니다."
 
 
 def test_explainer_falls_back_on_error_or_bad_reply():
@@ -151,6 +188,7 @@ def test_ollama_client_roundtrip(ollama_server):
     assert req["model"] == "qwen3:8b"
     assert req["stream"] is False and req["think"] is False
     assert req["format"]["required"] == ["summary", "impact", "action"]
+    assert [m["role"] for m in req["messages"]] == ["system", "user", "assistant", "user"]
 
 
 def test_ollama_client_unreachable():

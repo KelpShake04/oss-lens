@@ -18,11 +18,35 @@ DEFAULT_MODEL = "qwen3:8b"
 DEFAULT_HOST = "http://127.0.0.1:11434"
 
 SYSTEM_PROMPT = """너는 오픈소스 보안 전문가다. 보안 지식이 많지 않은 학생·스타트업 개발자에게 취약점을 설명한다.
+
 규칙:
-- 반드시 한국어로, 쉬운 말로 쓴다. 전문용어는 괄호로 짧게 풀어 쓴다.
-- 주어진 정보에 없는 사실(버전, 공격 사례, 수치)을 지어내지 않는다. 모르면 '확인 필요'라고 쓴다.
-- 업그레이드 명령이 주어지면 action 에 그대로 포함한다.
-- JSON 으로만 답한다: {"summary": "...", "impact": "...", "action": "..."}"""
+1. 한국어 존댓말(~합니다, ~하세요)로만 쓴다. 반말(~다, ~해라)은 쓰지 않는다.
+2. 원문 설명과 주어진 정보에 있는 사실만 쓴다. 원문에 없는 피해(코드 실행, 데이터 유출 등)나 버전·수치를 추측해 덧붙이지 않는다.
+3. 전문용어는 처음 나올 때 괄호로 짧게 풀어 쓴다.
+4. 업그레이드 명령어는 리포트에 따로 표시되므로 쓰지 않는다. 버전 번호만 쓴다.
+5. JSON 으로만 답한다.
+
+항목:
+- summary: 어떤 기능에서 무엇이 문제인지 한 문장.
+- impact: 공격자가 할 수 있는 일과 그 결과를 2문장으로.
+- action: 번호를 붙여 2~3단계. 1) 올릴 버전 2) 업그레이드 전 임시 대응(원문에 근거가 있을 때만) 3) 업그레이드 후 확인할 점."""
+
+# 말투·길이를 맞추기 위한 예시 한 쌍 (데모 프로젝트에 없는 취약점)
+EXAMPLE_VULN = Vulnerability(
+    id="CVE-2021-3807", severity="High", package="ansi-regex", version="5.0.0", pkg_type="npm",
+    cvss_score=7.5, fix_versions=["5.0.1"], aliases=["GHSA-93q8-gq69-wqmw"],
+    locations=["/package-lock.json"],
+    description="ansi-regex is vulnerable to Inefficient Regular Expression Complexity",
+)
+EXAMPLE_ANSWER = {
+    "summary": "ansi-regex 의 정규식이 특정 문자열에서 매우 느리게 동작하는 문제(ReDoS, 정규식 서비스 거부)가 있습니다.",
+    "impact": "공격자가 조작한 문자열을 넣으면 정규식 처리에 CPU 를 오래 쓰게 만들 수 있습니다. "
+              "그 결과 서버나 CLI 도구의 응답이 느려지거나 멈출 수 있습니다.",
+    "action": "1) ansi-regex 를 5.0.1 이상으로 올리세요. 다른 패키지가 끌어온 간접 의존성이면 그 상위 패키지를 업데이트하세요. "
+              "2) 업그레이드 후 터미널 출력 관련 기능이 정상인지 테스트하세요.",
+}
+
+KEV_SENTENCE = "실제 공격에 악용된 적이 있는 취약점입니다(CISA KEV)."
 
 RESPONSE_SCHEMA = {
     "type": "object",
@@ -44,7 +68,7 @@ VULN_TYPES = [
     (r"cross[- ]site scripting|\bxss\b", "크로스사이트 스크립팅(XSS, 웹페이지에 악성 스크립트 삽입)"),
     (r"server[- ]side request forgery|\bssrf\b", "서버 측 요청 위조(SSRF, 서버가 내부망에 요청하도록 유도)"),
     (r"path traversal|directory traversal", "경로 조작(허용되지 않은 파일 접근)"),
-    (r"regular expression denial|redos", "정규식 서비스 거부(ReDoS, 느린 정규식으로 서버를 멈춤)"),
+    (r"regular expression denial|inefficient regular expression|redos","정규식 서비스 거부(ReDoS, 느린 정규식으로 서버를 멈춤)"),
     (r"denial of service|\bdos\b|resource exhaustion|uncontrolled resource", "서비스 거부(DoS, 서버를 느리게 하거나 멈춤)"),
     (r"open redirect", "오픈 리다이렉트(악성 사이트로 이동 유도)"),
     (r"crlf injection|header injection", "헤더 주입(HTTP 응답·요청 조작)"),
@@ -110,10 +134,10 @@ class OllamaClient:
             return f"모델 '{self.model}' 이(가) 없습니다. 설치: ollama pull {self.model}"
         return None
 
-    def chat(self, system: str, user: str) -> str:
+    def chat(self, messages: list[dict]) -> str:
         payload = {
             "model": self.model,
-            "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
+            "messages": messages,
             "stream": False,
             "format": RESPONSE_SCHEMA,
             "think": False,  # qwen3 생각 모드 끔 (속도)
@@ -131,22 +155,33 @@ def build_prompt(v: Vulnerability) -> str:
     ]
     if v.epss is not None:
         lines.append(f"30일 내 악용 확률(EPSS): {v.epss:.1%}")
-    lines.append(f"실제 공격 사례(CISA KEV): {'있음' if v.known_exploited else '없음'}")
-    cmd = fix_command(v)
-    if cmd:
-        lines.append(f"패치 버전: {min_fix_version(v)} 이상 (업그레이드 명령: {cmd})")
+    if v.known_exploited:
+        lines.append(f"실제 공격 사례(CISA KEV): 있음 — impact 첫 문장에 '{KEV_SENTENCE}' 를 쓴다")
     else:
-        lines.append("패치 버전: 없음")
+        lines.append("실제 공격 사례(CISA KEV): 없음")
+    fix = min_fix_version(v)
+    lines.append(f"패치 버전: {fix} 이상" if fix else "패치 버전: 없음 (action 1 에 패치가 없다고 쓴다)")
     vtype = vuln_type_ko(v.description)
     if vtype:
         lines.append(f"취약점 유형(참고): {vtype}")
     lines.append(f"원문 설명(영어): {v.description[:1500] or '없음'}")
-    lines.append("")
-    lines.append("다음 세 항목을 작성해라.")
-    lines.append("- summary: 무엇이 문제인지 한 문장 요약")
-    lines.append("- impact: 이 라이브러리를 쓰는 프로젝트에 생길 수 있는 피해 2~3문장")
-    lines.append("- action: 지금 해야 할 조치 1~3단계")
     return "\n".join(lines)
+
+
+def build_messages(v: Vulnerability) -> list[dict]:
+    return [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": build_prompt(EXAMPLE_VULN)},
+        {"role": "assistant", "content": json.dumps(EXAMPLE_ANSWER, ensure_ascii=False)},
+        {"role": "user", "content": build_prompt(v)},
+    ]
+
+
+def _ensure_kev(v: Vulnerability, parsed: dict) -> dict:
+    """KEV 등재 사실은 모델이 빠뜨려도 반드시 보이게 한다."""
+    if v.known_exploited and "실제 공격" not in parsed["impact"]:
+        parsed = {**parsed, "impact": f"{KEV_SENTENCE} {parsed['impact']}"}
+    return parsed
 
 
 def parse_response(content: str) -> dict | None:
@@ -174,7 +209,7 @@ def rule_explanation(v: Vulnerability) -> Explanation:
 
     impact = []
     if v.known_exploited:
-        impact.append("실제 공격에 악용된 기록이 있는 취약점입니다(CISA KEV).")
+        impact.append(KEV_SENTENCE)
     if v.epss is not None:
         impact.append(f"30일 내 악용 가능성 추정치는 {v.epss:.1%} 입니다(EPSS).")
     if v.cvss_score is not None and v.cvss_score >= 9.0:
@@ -205,25 +240,27 @@ class Explainer:
             except ValueError:
                 self.cache = {}
 
-    def _cache_key(self, prompt: str) -> str:
+    def _cache_key(self, messages: list[dict]) -> str:
+        # 프롬프트·예시가 바뀌면 키도 바뀌어 자동으로 다시 생성된다
         model = self.client.model if self.client else ""
-        return hashlib.sha256(f"{model}\n{SYSTEM_PROMPT}\n{prompt}".encode()).hexdigest()
+        return hashlib.sha256(f"{model}\n{json.dumps(messages, ensure_ascii=False)}".encode()).hexdigest()
 
     def explain(self, v: Vulnerability) -> Explanation:
         if self.client is None:
             return rule_explanation(v)
-        prompt = build_prompt(v)
-        key = self._cache_key(prompt)
+        messages = build_messages(v)
+        key = self._cache_key(messages)
         if key in self.cache:
             return Explanation(**self.cache[key], source="llm")
         try:
-            parsed = parse_response(self.client.chat(SYSTEM_PROMPT, prompt))
+            parsed = parse_response(self.client.chat(messages))
         except (urllib.error.URLError, OSError, ValueError) as e:
             self.errors.append(f"{v.id}: {e}")
             return rule_explanation(v)
         if parsed is None:
             self.errors.append(f"{v.id}: LLM 응답을 해석하지 못했습니다")
             return rule_explanation(v)
+        parsed = _ensure_kev(v, parsed)
         self.cache[key] = parsed
         self._save()
         return Explanation(**parsed, source="llm")
