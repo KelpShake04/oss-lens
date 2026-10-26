@@ -59,6 +59,20 @@ def test_scan_rejects_missing_folder(tmp_path):
     assert main(["scan", str(tmp_path / "nope"), "-o", str(tmp_path), "--no-llm"]) == 1
 
 
+def _report_with_vulns(n):
+    vulns = [Vulnerability(id=f"CVE-{i}", severity="High", package="p", version="1", pkg_type="npm")
+             for i in range(n)]
+    return Report(target="t", project_license=None, packages=[], vulnerabilities=vulns,
+                  license_findings=[], explanations={}, top_keys=[], generated_at="now")
+
+
+def test_long_vuln_table_is_collapsed():
+    assert "<details open><summary>목록 보기" in render_html(_report_with_vulns(7))
+    html = render_html(_report_with_vulns(25))
+    assert "<details><summary>목록 보기" in html
+    assert html.count('<tr data-sev="High"') == 25
+
+
 def test_html_escapes_untrusted_text():
     evil = "<script>alert(1)</script>"
     v = Vulnerability(id="CVE-1", severity="High", package=evil, version="1", pkg_type="npm",

@@ -21,6 +21,7 @@ SEVERITY_CSS = {
     "Unknown": "neg",
 }
 LEVEL_CSS = {"high": "high", "medium": "med", "low": "low", "info": "neg"}
+VULN_TABLE_OPEN_MAX = 20  # 이보다 많으면 전체 취약점 표를 접어서 보여준다
 
 
 def _e(s) -> str:
@@ -211,9 +212,12 @@ def _vuln_table(r: Report) -> str:
     sev_opts = "".join(
         f'<option value="{s}">{_e(SEVERITY_KO[s])}</option>' for s in reversed(SEVERITY_ORDER)
     )
+    # 건수가 많으면 접어 둬서 요약·먼저 고칠 취약점이 묻히지 않게 한다
+    open_attr = " open" if len(rows) <= VULN_TABLE_OPEN_MAX else ""
     return f"""
 <section>
   <h2>전체 취약점 <small>{len(rows)}건</small></h2>
+  <details{open_attr}><summary>목록 보기 (심각도 필터·검색)</summary>
   <div class="filters">
     <select id="sev"><option value="">모든 심각도</option>{sev_opts}</select>
     <input id="q" type="search" placeholder="패키지·CVE 검색">
@@ -222,6 +226,7 @@ def _vuln_table(r: Report) -> str:
     <tr><th>심각도</th><th>취약점</th><th>패키지</th><th>현재</th><th>패치</th><th>CVSS</th><th>EPSS</th><th>점수</th><th>위치</th></tr>
     {''.join(rows)}
   </table></div>
+  </details>
 </section>"""
 
 
@@ -299,7 +304,7 @@ tr:last-child td{border-bottom:0}td.n{text-align:right;white-space:nowrap}
 .seg.strong-copyleft,.dot.strong-copyleft{background:var(--high)}.seg.network-copyleft,.dot.network-copyleft{background:var(--crit)}
 .seg.restricted,.dot.restricted{background:#7a2e9e}.seg.unknown,.dot.unknown{background:var(--neg)}
 .legend{font-size:13px;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:12px}
-details{margin-top:12px}summary{cursor:pointer;color:var(--muted)}.hint{font-size:13px;color:var(--muted)}
+details{margin-top:12px}summary{cursor:pointer;color:var(--muted)}details>.filters{margin-top:10px}.hint{font-size:13px;color:var(--muted)}
 .filters{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
 .filters select,.filters input{font:inherit;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg)}
 .filters input{flex:1;min-width:160px}
