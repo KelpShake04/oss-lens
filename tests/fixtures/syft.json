@@ -1,0 +1,46 @@
+{
+  "artifacts": [
+    {
+      "id": "a1", "name": "lodash", "version": "4.17.4", "type": "npm",
+      "foundBy": "javascript-lock-cataloger",
+      "locations": [{"path": "/package-lock.json"}],
+      "licenses": [{"value": "MIT", "spdxExpression": "MIT", "type": "declared"}],
+      "purl": "pkg:npm/lodash@4.17.4"
+    },
+    {
+      "id": "a2", "name": "tinymce", "version": "7.0.0", "type": "npm",
+      "foundBy": "javascript-lock-cataloger",
+      "locations": [{"path": "/package-lock.json"}],
+      "licenses": [{"value": "GPL-2.0-or-later", "spdxExpression": "GPL-2.0-or-later", "type": "declared"}],
+      "purl": "pkg:npm/tinymce@7.0.0"
+    },
+    {
+      "id": "a3", "name": "django", "version": "2.2.0", "type": "python",
+      "foundBy": "python-package-cataloger",
+      "locations": [{"path": "/requirements.txt"}],
+      "licenses": [],
+      "purl": "pkg:pypi/django@2.2.0"
+    },
+    {
+      "id": "a4", "name": "old-style", "version": "1.0", "type": "npm",
+      "locations": [{"path": "/package-lock.json"}],
+      "licenses": ["LGPL-3.0-only"],
+      "purl": "pkg:npm/old-style@1.0"
+    },
+    {
+      "id": "a5", "name": "dual-pkg", "version": "2.0", "type": "npm",
+      "locations": [{"path": "/package-lock.json"}],
+      "licenses": [{"value": "MIT OR GPL-3.0-only", "spdxExpression": "MIT OR GPL-3.0-only", "type": "declared"}],
+      "purl": "pkg:npm/dual-pkg@2.0"
+    },
+    {
+      "id": "a6", "name": "<img src=x onerror=alert(1)>", "version": "0.0.1\"><script>", "type": "npm",
+      "locations": [{"path": "/package-lock.json"}],
+      "licenses": [{"value": "AGPL-3.0-only<script>", "type": "declared"}],
+      "purl": ""
+    }
+  ],
+  "source": {"type": "directory", "metadata": {"path": "."}},
+  "descriptor": {"name": "syft", "version": "1.55.0"},
+  "schema": {"version": "16.1.11"}
+}

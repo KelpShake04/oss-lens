@@ -1,0 +1,78 @@
+{
+  "matches": [
+    {
+      "vulnerability": {
+        "id": "GHSA-p6mc-m468-83gw",
+        "dataSource": "https://github.com/advisories/GHSA-p6mc-m468-83gw",
+        "namespace": "github:language:javascript",
+        "severity": "High",
+        "urls": ["https://github.com/advisories/GHSA-p6mc-m468-83gw"],
+        "description": "Prototype Pollution in lodash",
+        "cvss": [{"version": "3.1", "metrics": {"baseScore": 7.4}}],
+        "fix": {"versions": ["4.17.19"], "state": "fixed"}
+      },
+      "relatedVulnerabilities": [
+        {"id": "CVE-2020-8203", "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2020-8203",
+         "severity": "High", "description": "Prototype pollution attack when using _.zipObjectDeep in lodash before 4.17.20.",
+         "cvss": [{"version": "3.1", "metrics": {"baseScore": 7.4}}]}
+      ],
+      "artifact": {"name": "lodash", "version": "4.17.4", "type": "npm", "purl": "pkg:npm/lodash@4.17.4"}
+    },
+    {
+      "vulnerability": {
+        "id": "GHSA-jf85-cpcp-j695",
+        "dataSource": "https://github.com/advisories/GHSA-jf85-cpcp-j695",
+        "severity": "Critical",
+        "description": "",
+        "cvss": [{"version": "3.1", "metrics": {"baseScore": 9.1}}],
+        "fix": {"versions": ["4.17.12"], "state": "fixed"}
+      },
+      "relatedVulnerabilities": [
+        {"id": "CVE-2019-10744", "severity": "Critical",
+         "description": "Versions of lodash lower than 4.17.12 are vulnerable to Prototype Pollution."}
+      ],
+      "artifact": {"name": "lodash", "version": "4.17.4", "type": "npm"}
+    },
+    {
+      "vulnerability": {
+        "id": "GHSA-jf85-cpcp-j695",
+        "severity": "Critical",
+        "description": "duplicate match from another matcher",
+        "fix": {"versions": ["4.17.12"], "state": "fixed"}
+      },
+      "relatedVulnerabilities": [],
+      "artifact": {"name": "lodash", "version": "4.17.4", "type": "npm"}
+    },
+    {
+      "vulnerability": {
+        "id": "GHSA-x8x9-2x9w-8w4w",
+        "dataSource": "javascript:alert(1)",
+        "severity": "medium",
+        "description": "<script>alert('xss')</script> SQL injection & more",
+        "fix": {"versions": [], "state": "not-fixed"}
+      },
+      "relatedVulnerabilities": [],
+      "artifact": {"name": "django", "version": "2.2.0", "type": "python"}
+    },
+    {
+      "vulnerability": {
+        "id": "CVE-2099-0001",
+        "severity": "Low",
+        "description": "Low issue",
+        "fix": {"versions": ["9.9.9"], "state": "fixed"}
+      },
+      "artifact": {"name": "django", "version": "2.2.0", "type": "python"}
+    },
+    {
+      "vulnerability": {
+        "id": "CVE-2099-0002",
+        "severity": "Critical",
+        "description": "Second critical with lower score",
+        "cvss": [{"version": "3.1", "metrics": {"baseScore": 9.0}}],
+        "fix": {"versions": ["3.0"], "state": "fixed"}
+      },
+      "artifact": {"name": "django", "version": "2.2.0", "type": "python"}
+    }
+  ],
+  "descriptor": {"name": "grype", "version": "0.121.0"}
+}
