@@ -20,6 +20,10 @@
      - grype `--by-cve` 가 NVD 원문을 버리는 문제 발견 → 사용 중단, 파서에서 CVE 정리
      - 8B 모델이 못 지키는 규칙은 코드로 보정: 핵심 용어 추가, 근거 없는 임시 대응·'코드 실행' 과장 삭제, KEV 문장 보장
 1-3. [x] 실제 프로젝트 검증: NodeGoat·PyGoat·DVNA (10-26) → [docs/validation.md](validation.md)
+1-4. [x] 웹 UI `oss-lens web` + 안드로이드 공기계 보기 전용 서버 배포 스크립트 (10-26) → [docs/deploy-android.md](deploy-android.md)
+1-5. [ ] 맥에서 `oss-lens web` 으로 실제 grype DB·qwen3:8b 검사 확인
+1-6. [ ] 공기계에 실제 설치 (Termux·Tailscale) — 막히면 화면 공유
+1-7. [ ] PR #1(`mvp` 브랜치, 다른 세션의 별도 MVP 초안) 정리 — main 구현과 겹침
 2. [ ] 학년/부문 확인 (프로토타입 저학년 vs 실용프로젝트)
 3. [ ] 공고 첨부(신청서·판넬 양식) 다운로드
 4. [ ] 신청서 제출 (~11/13)
@@ -34,7 +38,7 @@
 - syft 1.55.0 (Apache-2.0): SBOM 생성
 - grype 0.121.0 (Apache-2.0): 취약점 매칭
 - Ollama + qwen3:8b (설치됨): 한국어 해설. 맥(M1 Pro) 느리면 RTX 3070(VRAM 8GB) PC에서 Ollama 서버 실행 → OLLAMA_HOST로 원격 호출
-- 웹 UI: 미정 (Streamlit 또는 단일 HTML 리포트)
+- 웹 UI: 표준 라이브러리 http.server (`oss-lens web`), 리포트는 단일 HTML
 
 ### MVP 범위
 1. [x] 입력: 로컬 폴더, GitHub URL (`git clone --depth 1`)
@@ -44,7 +48,7 @@
 5. [x] HTML 리포트 출력 (단일 파일, 업그레이드 계획·필터·다크모드)
 
 ### MVP 이후 후보
-- [x] 웹 UI: `oss-lens web` (표준 라이브러리 서버, 검사·진행·리포트 목록, 발표장 공유 모드) (10-26)
+- [x] 웹 UI: `oss-lens web` (표준 라이브러리 서버, 검사·진행·리포트 목록, 발표장 공유 모드, 보기 전용 모드) (10-26)
 - 라이선스 위험도 LLM 해설 (현재는 규칙 기반 문구)
 - CI 용 `--fail-on high` 종료 코드
 
