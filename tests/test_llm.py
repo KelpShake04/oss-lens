@@ -202,6 +202,22 @@ def test_postprocess_drops_unsupported_code_execution_claim():
     assert out["impact"] == f"{KEV_SENTENCE} 메모리를 덮어씁니다."
 
 
+def test_postprocess_renumbers_skipped_steps():
+    # PyGoat 실제 사례: 모델이 2단계를 빼면서 번호를 그대로 둠
+    action = "1) pillow를 10.0.1 이상으로 올리세요. 3) 업그레이드 후 이미지 처리 기능이 정상인지 테스트하세요."
+    out = postprocess(_v(description=PILLOW), _answer(action))
+    assert out["action"] == "1) pillow를 10.0.1 이상으로 올리세요. 2) 업그레이드 후 이미지 처리 기능이 정상인지 테스트하세요."
+
+
+def test_postprocess_strips_dangling_connective_after_drop():
+    # NodeGoat 실제 사례 형태: 앞 문장을 지우면 '이로 인해'가 가리킬 대상이 없어진다
+    impact = "공격자가 악성 코드를 실행할 수 있습니다. 이로 인해 시스템이 손상될 수 있습니다."
+    assert postprocess(_v(description=PILLOW), {**_answer(), "impact": impact})["impact"] == "시스템이 손상될 수 있습니다."
+    # 지운 문장이 없으면 연결어는 그대로
+    impact = "메모리를 덮어씁니다. 이로 인해 프로그램이 멈출 수 있습니다."
+    assert postprocess(_v(description=PILLOW), {**_answer(), "impact": impact})["impact"] == impact
+
+
 def test_postprocess_keeps_code_execution_when_source_says_so():
     impact = "공격자가 YAML 로 코드를 실행할 수 있습니다. 서버가 장악될 수 있습니다."
     assert postprocess(_v(description=PYYAML), {**_answer(), "impact": impact})["impact"] == impact
@@ -215,6 +231,9 @@ def test_postprocess_keeps_code_execution_when_source_says_so():
     "such as ones that use the Python exec method.",
     "PyYAML 5.1 through 5.1.2 has insufficient restrictions on the load and load_all functions because of "
     "a class deserialization issue, e.g., Popen is a class in the subprocess module.",
+    # NodeGoat 실제 사례
+    "The package underscore from 1.13.0-0 and before 1.13.0-2, from 1.3.2 and before 1.12.1 are vulnerable "
+    "to Arbitrary Code Injection via the template function.",
 ])
 def test_postprocess_keeps_code_execution_implied_by_source(desc):
     impact = "공격자가 임의 코드를 실행할 수 있습니다. 서버가 장악될 수 있습니다."

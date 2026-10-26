@@ -285,11 +285,14 @@ def _mentions(text: str, terms: list[str]) -> bool:
 
 
 _CODE_EXEC_KO = re.compile(r"코드\s*(?:를|가)?\s*실행|명령(?:어)?\s*(?:를|을)?\s*실행")
-# 원문이 실행을 뜻하는 표현들. 'exec method'(Pillow ImageMath.eval), 'Popen ... subprocess'(PyYAML 역직렬화)도 포함
+# 원문이 실행을 뜻하는 표현들. 'exec method'(Pillow ImageMath.eval), 'Popen ... subprocess'(PyYAML 역직렬화),
+# 'Arbitrary Code Injection'(underscore template)도 포함
 _CODE_EXEC_EN = re.compile(
-    r"execut|command|\brce\b|\bexec\b|\beval\b|evaluation of arbitrary|subprocess|popen|deserializ",
+    r"execut|command|\brce\b|\bexec\b|\beval\b|evaluation of arbitrary|subprocess|popen|deserializ|code injection",
     re.IGNORECASE,
 )
+# 앞 문장을 가리키는 연결어. 앞 문장을 지우면 뒤 문장 머리에서 뗀다
+_CONNECTIVE = re.compile(r"^(?:이로 인해|이로 인하여|이 때문에|그 결과|따라서|이는)\s*,?\s*")
 _PLATFORM = re.compile(r"\bon (Windows|macOS|Linux|Android|iOS)\b")
 
 
@@ -302,8 +305,13 @@ def _drop_unsupported_code_exec(impact: str, description: str) -> str:
     """원문에 실행(execution·command) 언급이 없는데 '코드 실행'을 말하는 문장은 지운다."""
     if _CODE_EXEC_EN.search(description or ""):
         return impact
-    sentences = re.split(r"(?<=[.!?])\s+", impact.strip())
-    kept = [s for s in sentences if not _CODE_EXEC_KO.search(s)]
+    kept, dropped_prev = [], False
+    for s in re.split(r"(?<=[.!?])\s+", impact.strip()):
+        if _CODE_EXEC_KO.search(s):
+            dropped_prev = True
+            continue
+        kept.append(_CONNECTIVE.sub("", s) if dropped_prev else s)
+        dropped_prev = False
     return " ".join(kept) if kept else impact
 
 
@@ -333,8 +341,11 @@ def postprocess(v: Vulnerability, parsed: dict) -> dict:
         anchors = key_terms(" ".join(conds), v.package)
         grounded = conds and (not anchors or _mentions(" ".join(steps[1:-1]), anchors))
         if not grounded:
-            kept = " ".join(f"{i}) {s}" for i, s in enumerate([steps[0], steps[-1]], 1))
-            out["action"] = f"{preamble} {kept}".strip()
+            steps = [steps[0], steps[-1]]
+    if steps:
+        # 모델이 단계를 빼면서 번호를 건너뛰기도 한다 ('1) ... 3) ...', PyGoat pillow)
+        numbered = " ".join(f"{i}) {s}" for i, s in enumerate(steps, 1))
+        out["action"] = f"{preamble} {numbered}".strip()
     return out
 
 
