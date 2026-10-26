@@ -11,7 +11,7 @@ from pathlib import Path
 from . import __version__
 from .licenses import CATEGORIES, category_counts
 from .models import SEVERITY_KO, SEVERITY_ORDER, Report, Vulnerability
-from .risk import fix_command, min_fix_version, upgrade_plan, vuln_key
+from .risk import fix_command, min_fix_version, same_package_count, upgrade_plan, vuln_key
 
 SEVERITY_CSS = {
     "Critical": "crit",
@@ -98,6 +98,9 @@ def _top_section(r: Report) -> str:
             meta.append(f'<span class="chip">악용 확률 {v.epss:.1%}</span>')
         if v.known_exploited:
             meta.append('<span class="chip kev">실제 공격 확인(KEV)</span>')
+        more = same_package_count(r.vulnerabilities, v)
+        if more:
+            meta.append(f'<span class="chip">같은 패키지 취약점 {more}건 더 (업그레이드 계획 참고)</span>')
         src = ""
         if ex:
             src = ('<span class="src ai">AI 해설</span>' if ex.source == "llm"

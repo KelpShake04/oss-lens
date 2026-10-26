@@ -209,6 +209,33 @@ def test_postprocess_keeps_code_execution_when_source_says_so():
     assert postprocess(_v(description=EJS), {**_answer(), "impact": impact})["impact"] == impact
 
 
+@pytest.mark.parametrize("desc", [
+    # PyGoat 실제 사례: 원문이 실행을 뜻하는데 'execute' 라는 단어가 없어 맞는 문장이 지워졌다
+    "PIL.ImageMath.eval in Pillow before 9.0.0 allows evaluation of arbitrary expressions, "
+    "such as ones that use the Python exec method.",
+    "PyYAML 5.1 through 5.1.2 has insufficient restrictions on the load and load_all functions because of "
+    "a class deserialization issue, e.g., Popen is a class in the subprocess module.",
+])
+def test_postprocess_keeps_code_execution_implied_by_source(desc):
+    impact = "공격자가 임의 코드를 실행할 수 있습니다. 서버가 장악될 수 있습니다."
+    assert postprocess(_v(description=desc), {**_answer(), "impact": impact})["impact"] == impact
+
+
+DJANGO_DOS = ("An issue was discovered in Django 3.2 before 3.2.23, 4.1 before 4.1.13, and 4.2 before 4.2.7. "
+              "The NFKC normalization is slow on Windows. As a consequence, "
+              "django.contrib.auth.forms.UsernameField is subject to a potential DoS attack.")
+
+
+def test_postprocess_adds_platform_when_missing():
+    # PyGoat 실제 사례: Windows 에서만 생기는 DoS 인데 해설에 언급이 없었다
+    out = postprocess(_v(description=DJANGO_DOS), _answer(summary="UsernameField 에서 DoS 가 있습니다."))
+    assert out["summary"] == "UsernameField 에서 DoS 가 있습니다. (원문 기준 Windows 환경에서 발생)"
+    ok = postprocess(_v(description=DJANGO_DOS), _answer(summary="Windows 에서 UsernameField 가 느려집니다."))
+    assert "원문 기준" not in ok["summary"]
+    assert "발생 환경(원문): Windows" in build_prompt(_v(description=DJANGO_DOS))
+    assert "발생 환경" not in build_prompt(_v(description=PILLOW))
+
+
 def test_postprocess_adds_missing_key_term():
     out = postprocess(_v(description=DJANGO), _answer(summary="SQL 주입 취약점이 있습니다."))
     assert out["summary"] == "SQL 주입 취약점이 있습니다. 관련 기능: QuerySet.order_by."

@@ -86,7 +86,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
                 log(f"  ! {reason} (규칙 기반 설명으로 대체)")
                 client = None
         explainer = Explainer(client, cache_path=out_dir / "llm-cache.json")
-        top = vulns[: args.top]
+        top = risk.pick_top(vulns, args.top)
         explanations = {}
         for i, v in enumerate(top, 1):
             log(f"4/4 해설 생성 중 [{i}/{len(top)}] {v.package} {v.id}")
@@ -155,15 +155,17 @@ def cmd_show(args: argparse.Namespace) -> int:
         log(f"리포트가 없습니다: {path} (먼저 oss-lens scan 을 실행하세요)")
         return 1
     r = json.loads(path.read_text(encoding="utf-8"))
-    vulns = {risk.vuln_key(Vulnerability(**v)): v for v in r["vulnerabilities"]}
+    all_vulns = [Vulnerability(**v) for v in r["vulnerabilities"]]
+    by_key = {risk.vuln_key(v): v for v in all_vulns}
     print(f"{r['target']} · 패키지 {len(r['packages'])}개 · 취약점 {len(r['vulnerabilities'])}건")
     for note in r.get("notes", []):
         print(f"! {note}")
     for i, key in enumerate(r["top_keys"], 1):
-        v, e = vulns[key], r["explanations"][key]
-        desc = v["description"]
-        print(f"\n[{i}] {v['package']} {v['version']} · {v['id']} · {SEVERITY_KO.get(v['severity'], v['severity'])}"
-              f" · {'AI' if e['source'] == 'llm' else '규칙'}")
+        v, e = by_key[key], r["explanations"][key]
+        desc = v.description
+        more = risk.same_package_count(all_vulns, v)
+        print(f"\n[{i}] {v.package} {v.version} · {v.id} · {SEVERITY_KO.get(v.severity, v.severity)}"
+              f" · {'AI' if e['source'] == 'llm' else '규칙'}" + (f" · 같은 패키지 {more}건 더" if more else ""))
         if args.source:
             print(f"  원문: {desc[:200] + ('…' if len(desc) > 200 else '')}")
         print(f"  요약: {e['summary']}\n  영향: {e['impact']}\n  조치: {e['action']}")

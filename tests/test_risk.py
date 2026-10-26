@@ -1,6 +1,14 @@
 from oss_lens.models import Vulnerability
 from oss_lens.parsers import parse_grype
-from oss_lens.risk import fix_command, min_fix_version, rank, score, upgrade_plan
+from oss_lens.risk import (
+    fix_command,
+    min_fix_version,
+    pick_top,
+    rank,
+    same_package_count,
+    score,
+    upgrade_plan,
+)
 
 
 def _v(**kw):
@@ -31,6 +39,27 @@ def test_rank_demo_fixture(grype_data):
     assert ranked[0].id == "CVE-2021-44906"  # 9.8 + EPSS
     assert [v.severity for v in ranked[:3]] == ["Critical"] * 3
     assert ranked[-1].severity == "Medium"
+
+
+def test_pick_top_spreads_across_packages():
+    # PyGoat 실제 사례: 점수순 상위 8개가 pyyaml·pillow·django 3종류뿐이었다
+    ranked = rank([
+        _v(id="Y1", package="pyyaml", cvss_score=9.9), _v(id="Y2", package="pyyaml", cvss_score=9.8),
+        _v(id="P1", package="pillow", cvss_score=9.7), _v(id="Y3", package="pyyaml", cvss_score=9.6),
+        _v(id="P2", package="pillow", cvss_score=9.5), _v(id="W1", package="werkzeug", cvss_score=7.5),
+        _v(id="J1", package="pyjwt", cvss_score=7.4),
+    ])
+    assert [v.id for v in pick_top(ranked, 4)] == ["Y1", "P1", "W1", "J1"]
+    # 패키지가 모자라면 남은 자리를 점수순으로 채우고, 결과는 점수순을 유지한다
+    assert [v.id for v in pick_top(ranked, 6)] == ["Y1", "Y2", "P1", "Y3", "W1", "J1"]
+    assert pick_top(ranked, 0) == []
+
+
+def test_same_package_count():
+    a, b = _v(id="A", package="pyyaml", version="5.1"), _v(id="B", package="pyyaml", version="5.1")
+    c = _v(id="C", package="pyyaml", version="6.0")
+    assert same_package_count([a, b, c], a) == 1
+    assert same_package_count([a, b, c], c) == 0
 
 
 def test_min_fix_version_picks_current_release_line():

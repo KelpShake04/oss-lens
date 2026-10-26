@@ -46,6 +46,25 @@ def rank(vulns: list[Vulnerability]) -> list[Vulnerability]:
     )
 
 
+def pick_top(ranked: list[Vulnerability], n: int) -> list[Vulnerability]:
+    """AI 해설할 상위 n개. 패키지마다 가장 위험한 것을 먼저 하나씩 고르고, 자리가 남으면 채운다.
+
+    같은 패키지의 취약점은 업그레이드 한 번으로 함께 해결되므로, 한 패키지가 상위권을
+    독차지하면(PyGoat: 8개 중 pyyaml 3, pillow 3) 정작 다른 위험 패키지가 안 보인다.
+    """
+    first, rest, seen = [], [], set()
+    for v in ranked:
+        (rest if v.package.lower() in seen else first).append(v)
+        seen.add(v.package.lower())
+    chosen = {id(v) for v in (first + rest)[:n]}
+    return [v for v in ranked if id(v) in chosen]
+
+
+def same_package_count(vulns: list[Vulnerability], v: Vulnerability) -> int:
+    """v 와 같은 패키지·버전의 다른 취약점 수 (같은 업그레이드로 함께 해결된다)."""
+    return sum(1 for o in vulns if o is not v and o.package == v.package and o.version == v.version)
+
+
 def _version_key(ver: str) -> tuple:
     """대략적인 버전 비교 키. 1.0.0-rc1 / 1.0.0rc1 같은 사전 릴리스는 1.0.0 보다 앞선다."""
     m = re.match(r"^([\d.]*\d)?(.*)$", ver.lstrip("v").split("+")[0])

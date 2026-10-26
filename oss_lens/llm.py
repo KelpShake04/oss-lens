@@ -51,7 +51,7 @@ EXAMPLES = [
         {
             "summary": "ansi-regex의 정규식이 특정 문자열에서 매우 느리게 동작하는 정규식 서비스 거부(ReDoS) 취약점이 있습니다.",
             "impact": "공격자가 조작한 문자열을 넣으면 정규식 처리에 CPU를 오래 쓰게 만들 수 있습니다. "
-                      "그 결과 서버나 CLI 도구의 응답이 느려지거나 멈출 수 있습니다.",
+                      "그 결과 ansi-regex로 터미널 출력을 다루는 프로그램이 느려지거나 멈출 수 있습니다.",
             "action": "1) ansi-regex를 5.0.1 이상으로 올리세요. "
                       "2) 업그레이드 후 터미널 출력 관련 기능이 정상인지 테스트하세요.",
         },
@@ -245,6 +245,9 @@ def build_prompt(v: Vulnerability) -> str:
     terms = key_terms(v.description, v.package)
     if terms:
         lines.append(f"원문 핵심 용어(summary 에 그대로 쓴다): {', '.join(terms)}")
+    os_names = platforms(v.description)
+    if os_names:
+        lines.append(f"발생 환경(원문): {', '.join(os_names)} — summary 에 이 환경에서 생기는 문제임을 쓴다")
     conds = risk_conditions(v.description)
     if conds:
         lines.append(f"위험 조건(원문): {' / '.join(conds)}")
@@ -282,7 +285,17 @@ def _mentions(text: str, terms: list[str]) -> bool:
 
 
 _CODE_EXEC_KO = re.compile(r"코드\s*(?:를|가)?\s*실행|명령(?:어)?\s*(?:를|을)?\s*실행")
-_CODE_EXEC_EN = re.compile(r"execut|command|\brce\b", re.IGNORECASE)
+# 원문이 실행을 뜻하는 표현들. 'exec method'(Pillow ImageMath.eval), 'Popen ... subprocess'(PyYAML 역직렬화)도 포함
+_CODE_EXEC_EN = re.compile(
+    r"execut|command|\brce\b|\bexec\b|\beval\b|evaluation of arbitrary|subprocess|popen|deserializ",
+    re.IGNORECASE,
+)
+_PLATFORM = re.compile(r"\bon (Windows|macOS|Linux|Android|iOS)\b")
+
+
+def platforms(description: str) -> list[str]:
+    """'slow on Windows' 처럼 특정 OS 에서만 생기는 문제인지."""
+    return sorted(set(_PLATFORM.findall(description or "")))
 
 
 def _drop_unsupported_code_exec(impact: str, description: str) -> str:
@@ -310,6 +323,9 @@ def postprocess(v: Vulnerability, parsed: dict) -> dict:
     terms = key_terms(v.description, v.package)
     if terms and not _mentions(out["summary"], terms):
         out["summary"] = f"{out['summary']} 관련 기능: {', '.join(terms[:2])}."
+    os_names = platforms(v.description)
+    if os_names and not _mentions(out["summary"] + out["impact"], os_names):
+        out["summary"] = f"{out['summary']} (원문 기준 {', '.join(os_names)} 환경에서 발생)"
 
     preamble, steps = _split_steps(out["action"])
     if len(steps) > 2:
