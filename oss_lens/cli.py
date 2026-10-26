@@ -12,7 +12,7 @@ from pathlib import Path
 
 from . import __version__, licenses, parsers, risk, scanner
 from .llm import DEFAULT_MODEL, Explainer, OllamaClient
-from .models import Report
+from .models import SEVERITY_KO, Report, Vulnerability
 from .report import render_html, render_json
 
 GITHUB_URL = re.compile(r"^https://github\.com/[\w.-]+/[\w.-]+(\.git)?/?$")
@@ -52,7 +52,16 @@ def cmd_scan(args: argparse.Namespace) -> int:
             sbom_path = out_dir / "sbom.json"
             log("1/4 SBOM 생성 중 (syft)...")
             sbom = scanner.run_syft(src, sbom_path, remote_licenses=args.remote_licenses)
-        packages = parsers.parse_syft(sbom)
+        packages = parsers.parse_syft(sbom, first_party=scanner.first_party_packages(src))
+
+        # 검사에서 조용히 빠지는 의존성을 알린다 ('취약점 0건'이 '안전'으로 읽히지 않게)
+        notes = scanner.coverage_gaps(src)
+        if not packages:
+            notes.insert(0, "오픈소스 패키지를 하나도 찾지 못했습니다. 취약점 0건은 '안전'이 아니라 "
+                            "'검사하지 못함'일 수 있습니다. lock 파일(package-lock.json, poetry.lock 등)이나 "
+                            "버전이 고정된 requirements.txt 가 있는지 확인하세요.")
+        for note in notes:
+            log(f"  ! {note}")
 
         # 2) 취약점
         if args.grype_json:
@@ -68,7 +77,6 @@ def cmd_scan(args: argparse.Namespace) -> int:
         license_findings = licenses.evaluate(packages, project_license)
 
         # 4) 해설
-        notes = []
         client = None
         if not args.no_llm:
             client = OllamaClient(host=args.ollama_host, model=args.model)
@@ -138,6 +146,30 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     return 0 if ok else 1
 
 
+def cmd_show(args: argparse.Namespace) -> int:
+    """저장된 report.json 의 요약과 AI 해설을 터미널에 출력."""
+    path = Path(args.path)
+    if path.is_dir():
+        path = path / "report.json"
+    if not path.is_file():
+        log(f"리포트가 없습니다: {path} (먼저 oss-lens scan 을 실행하세요)")
+        return 1
+    r = json.loads(path.read_text(encoding="utf-8"))
+    vulns = {risk.vuln_key(Vulnerability(**v)): v for v in r["vulnerabilities"]}
+    print(f"{r['target']} · 패키지 {len(r['packages'])}개 · 취약점 {len(r['vulnerabilities'])}건")
+    for note in r.get("notes", []):
+        print(f"! {note}")
+    for i, key in enumerate(r["top_keys"], 1):
+        v, e = vulns[key], r["explanations"][key]
+        desc = v["description"]
+        print(f"\n[{i}] {v['package']} {v['version']} · {v['id']} · {SEVERITY_KO.get(v['severity'], v['severity'])}"
+              f" · {'AI' if e['source'] == 'llm' else '규칙'}")
+        if args.source:
+            print(f"  원문: {desc[:200] + ('…' if len(desc) > 200 else '')}")
+        print(f"  요약: {e['summary']}\n  영향: {e['impact']}\n  조치: {e['action']}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="oss-lens", description="오픈소스 의존성 보안·라이선스 진단기")
     p.add_argument("--version", action="version", version=f"oss-lens {__version__}")
@@ -163,6 +195,11 @@ def build_parser() -> argparse.ArgumentParser:
     d = sub.add_parser("doctor", help="필요한 도구(syft·grype·Ollama) 설치 상태 확인")
     llm_opts(d)
     d.set_defaults(func=cmd_doctor)
+
+    sh = sub.add_parser("show", help="저장된 리포트의 AI 해설을 터미널에 출력")
+    sh.add_argument("path", help="결과 폴더(out/<이름>) 또는 report.json")
+    sh.add_argument("--source", action="store_true", help="취약점 원문 설명(영어)도 함께 출력")
+    sh.set_defaults(func=cmd_show)
     return p
 
 

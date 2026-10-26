@@ -32,8 +32,12 @@ oss-lens doctor                               # 설치 상태 확인
 oss-lens scan examples/vulnerable-demo          # 데모용 취약 프로젝트
 oss-lens scan ~/my-project --top 10             # AI 해설 10개
 oss-lens scan https://github.com/owner/repo     # GitHub 저장소 (임시 폴더에 복제 후 삭제)
+oss-lens show out/vulnerable-demo --source      # 저장된 AI 해설을 터미널에 출력 (--source: 원문 함께)
 ```
 결과는 `out/<이름>/` 에 저장된다.
+
+lock 파일 없는 `package.json`, 버전을 고정하지 않은 `requirements.txt` 항목처럼 syft 가 의존성을 찾지 못하는 경우는
+리포트 맨 위에 경고로 표시한다. '취약점 0건'이 '안전'이 아니라 '검사하지 못함'일 수 있기 때문이다.
 
 | 파일 | 내용 |
 |---|---|

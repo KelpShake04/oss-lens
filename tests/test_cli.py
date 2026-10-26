@@ -55,6 +55,36 @@ def test_scan_names_output_after_resolved_folder(tmp_path, monkeypatch):
     assert (tmp_path / "vulnerable-demo" / "report.html").is_file()
 
 
+def test_scan_warns_when_nothing_found(tmp_path, capsys):
+    project = tmp_path / "dvna"
+    project.mkdir()
+    (project / "package.json").write_text('{"dependencies": {"express": "^4.16.2"}}')
+    sbom = tmp_path / "sbom.json"
+    sbom.write_text('{"artifacts": []}')
+    grype = tmp_path / "grype.json"
+    grype.write_text('{"matches": []}')
+    assert main(["scan", str(project), "-o", str(tmp_path / "out"), "--no-llm",
+                 "--sbom", str(sbom), "--grype-json", str(grype)]) == 0
+    data = json.loads((tmp_path / "out" / "dvna" / "report.json").read_text(encoding="utf-8"))
+    assert data["notes"][0].startswith("오픈소스 패키지를 하나도 찾지 못했습니다")
+    assert "lock 파일이 없는 package.json" in data["notes"][1]
+    html = (tmp_path / "out" / "dvna" / "report.html").read_text(encoding="utf-8")
+    # 경고는 요약 카드보다 위에 보여야 한다
+    assert html.index('class="notes"') < html.index('class="cards"')
+
+
+def test_show_prints_explanations(tmp_path, capsys):
+    assert _scan(tmp_path, "--top", "2") == 0
+    capsys.readouterr()
+    assert main(["show", str(tmp_path / "vulnerable-demo"), "--source"]) == 0
+    out = capsys.readouterr().out
+    assert "패키지 15개 · 취약점 7건" in out
+    assert "[1] minimist 1.2.5 · CVE-2021-44906 · 치명 · 규칙" in out
+    assert "원문: Minimist <=1.2.5 is vulnerable" in out
+    assert "[3]" not in out
+    assert main(["show", str(tmp_path / "nope")]) == 1
+
+
 def test_scan_rejects_missing_folder(tmp_path):
     assert main(["scan", str(tmp_path / "nope"), "-o", str(tmp_path), "--no-llm"]) == 1
 

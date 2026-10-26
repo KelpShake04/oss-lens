@@ -82,6 +82,72 @@ def run_grype(sbom_path: Path, out_path: Path, timeout: int = 900) -> dict:
     return json.loads(proc.stdout)
 
 
+_SKIP_DIRS = {"node_modules", ".git", ".venv", "venv", "__pycache__", "out", "dist", "build"}
+_NPM_LOCKS = ("package-lock.json", "npm-shrinkwrap.json", "yarn.lock", "pnpm-lock.yaml", "bun.lock", "bun.lockb")
+
+
+def _walk(root: Path):
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in _SKIP_DIRS]
+        yield Path(dirpath), set(filenames)
+
+
+def first_party_packages(root: Path) -> set[tuple[str, str]]:
+    """package-lock.json 에 적힌 프로젝트 자신(루트·워크스페이스)의 (이름, 버전).
+
+    배포 주소(resolved)가 없다는 것만으로는 판단할 수 없다: 다른 패키지에 묶여 배포되는
+    의존성(inBundle)도 resolved 가 비어 있다.
+    """
+    found = set()
+    for d, files in _walk(root):
+        for lock in ("package-lock.json", "npm-shrinkwrap.json"):
+            if lock not in files:
+                continue
+            try:
+                data = json.loads((d / lock).read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            if data.get("name"):
+                found.add((data["name"], data.get("version", "")))
+            for key, entry in (data.get("packages") or {}).items():
+                if key and "node_modules/" not in key and entry.get("name"):  # 워크스페이스
+                    found.add((entry["name"], entry.get("version", "")))
+    return found
+
+
+def coverage_gaps(root: Path, limit: int = 5) -> list[str]:
+    """syft 가 의존성을 찾지 못하는 경우 (검사에서 조용히 빠지는 것을 알리기 위해)."""
+    unlocked, unpinned = [], []
+    for d, files in _walk(root):
+        rel_dir = d.relative_to(root).as_posix()
+        prefix = "" if rel_dir == "." else f"/{rel_dir}"
+        if "package.json" in files and not files.intersection(_NPM_LOCKS):
+            unlocked.append(f"{prefix}/package.json")
+        for name in sorted(files):
+            if not (name.startswith("requirements") and name.endswith(".txt")):
+                continue
+            try:
+                lines = (d / name).read_text(encoding="utf-8", errors="ignore").splitlines()
+            except OSError:
+                continue
+            for line in lines:
+                spec = line.split("#", 1)[0].strip()
+                if spec and not spec.startswith("-") and "==" not in spec and "@" not in spec:
+                    unpinned.append(f"{spec} ({prefix}/{name})")
+    notes = []
+    if unlocked:
+        notes.append(
+            f"lock 파일이 없는 package.json {len(unlocked)}개는 의존성을 찾지 못했습니다: "
+            f"{', '.join(unlocked[:limit])}. npm install 로 package-lock.json 을 만든 뒤 다시 검사하세요."
+        )
+    if unpinned:
+        notes.append(
+            f"버전을 고정하지 않은(== 없는) requirements 항목 {len(unpinned)}개는 검사에서 빠졌습니다: "
+            f"{', '.join(unpinned[:limit])}. pip freeze 로 버전을 고정하면 검사할 수 있습니다."
+        )
+    return notes
+
+
 def clone_github(url: str) -> Path:
     """GitHub 저장소를 임시 폴더에 얕게 복제. 호출자가 정리 책임."""
     git = shutil.which("git")

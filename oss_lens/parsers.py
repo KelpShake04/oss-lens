@@ -30,19 +30,13 @@ def _location_paths(raw) -> list[str]:
     return paths
 
 
-def _is_first_party(artifact: dict) -> bool:
-    """package-lock.json 의 루트/워크스페이스 항목(배포 주소가 없음)은 프로젝트 자신이다."""
-    return (
-        artifact.get("metadataType") == "javascript-npm-package-lock-entry"
-        and not (artifact.get("metadata") or {}).get("resolved")
-    )
-
-
-def parse_syft(data: dict) -> list[Package]:
+def parse_syft(data: dict, first_party: set[tuple[str, str]] | None = None) -> list[Package]:
+    """syft artifacts -> Package 목록. first_party 의 (이름, 버전)은 프로젝트 자신이라 뺀다."""
+    first_party = first_party or set()
     packages = []
     seen = set()
     for a in data.get("artifacts", []):
-        if _is_first_party(a):
+        if (a.get("name"), a.get("version")) in first_party:
             continue
         key = (a.get("name"), a.get("version"), a.get("type"))
         if key in seen:

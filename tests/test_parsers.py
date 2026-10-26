@@ -12,9 +12,18 @@ def test_parse_syft_packages_and_licenses(syft_data):
 
 
 def test_parse_syft_skips_project_root(syft_data):
-    names = {p.name for p in parse_syft(syft_data)}
+    names = {p.name for p in parse_syft(syft_data, first_party={("vulnerable-demo", "1.0.0")})}
     assert "vulnerable-demo" not in names
     assert len(names) == 15
+    assert "vulnerable-demo" in {p.name for p in parse_syft(syft_data)}
+
+
+def test_parse_syft_keeps_bundled_deps_without_resolved():
+    # NodeGoat 실제 사례: inBundle 의존성은 resolved 가 비어 있지만 프로젝트 자신이 아니다
+    data = {"artifacts": [{"name": "abbrev", "version": "1.1.1", "type": "npm",
+                           "metadataType": "javascript-npm-package-lock-entry",
+                           "metadata": {"resolved": "", "integrity": ""}, "licenses": [{"value": "ISC"}]}]}
+    assert [p.name for p in parse_syft(data, first_party={("app", "1.0.0")})] == ["abbrev"]
 
 
 def test_parse_syft_accepts_string_licenses():

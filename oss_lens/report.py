@@ -250,13 +250,19 @@ def _sbom_section(r: Report) -> str:
 </section>"""
 
 
+def _notes(r: Report) -> str:
+    """검사 누락·LLM 대체 등 결과를 읽기 전에 알아야 할 것. 요약 위에 보여준다."""
+    if not r.notes:
+        return ""
+    items = "".join(f"<li>{_e(n)}</li>" for n in r.notes)
+    return f'<aside class="notes"><b>확인 필요</b><ul>{items}</ul></aside>'
+
+
 def _footer(r: Report) -> str:
     tv = r.tool_versions
     llm = f"Ollama + {_e(r.llm_model)}" if r.llm_model else "사용 안 함 (규칙 기반 설명)"
-    notes = "".join(f"<li>{_e(n)}</li>" for n in r.notes)
     return f"""
 <footer>
-  {f'<ul class="notes">{notes}</ul>' if notes else ''}
   <p>사용 오픈소스: syft {_e(tv.get('syft', '?'))} (Apache-2.0, SBOM 생성) ·
   grype {_e(tv.get('grype', '?'))} (Apache-2.0, 취약점 매칭) · 해설: {llm}</p>
   <p>AI 해설은 참고용입니다. 조치 전 원문 권고(링크)를 확인하세요. 라이선스 판단은 법률 자문이 아닙니다.</p>
@@ -317,7 +323,8 @@ details{margin-top:12px}summary{cursor:pointer;color:var(--muted)}details>.filte
 .empty{color:var(--muted)}.warn{color:var(--high);font-weight:600}
 td.cmd{white-space:nowrap}td.cmd code{font-size:12px}
 footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
-footer .notes{color:var(--high)}
+.notes{margin-top:16px;padding:10px 14px;border:1px solid var(--high);border-left-width:4px;border-radius:8px;
+background:var(--card);font-size:14px}.notes b{color:var(--high)}.notes ul{margin:4px 0 0;padding-left:18px}
 @media print{.filters,button.copy{display:none}details{display:block}.top{break-inside:avoid}}
 """
 
@@ -346,6 +353,7 @@ def render_html(r: Report) -> str:
 <main>
   <h1>오픈소스 의존성 진단 리포트</h1>
   <div class="target">{_e(r.target)} · {_e(r.generated_at)}</div>
+  {_notes(r)}
   {_summary_cards(r)}
   {_top_section(r)}
   {_upgrade_section(r)}
