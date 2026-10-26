@@ -27,7 +27,21 @@ oss-lens doctor                               # 설치 상태 확인
 새 터미널을 열 때마다 `source .venv/bin/activate` 를 먼저 실행한다.
 설치 없이 저장소 폴더에서 `python3 -m oss_lens doctor` 처럼 실행해도 된다.
 
-## 사용
+## 웹 UI
+```bash
+oss-lens web                     # 브라우저가 열리고 http://localhost:8765 에서 사용
+```
+폴더 경로나 GitHub 주소를 넣고 **검사 시작**을 누르면 진행 상황(SBOM → 취약점 → 라이선스 → AI 해설)을 보여 주고,
+끝나면 리포트를 연다. 지난 리포트는 첫 화면 목록에서 다시 볼 수 있다. 예시 버튼(데모 프로젝트·NodeGoat·PyGoat)으로 바로 시연할 수 있다.
+
+발표장에서 다른 사람이 자기 기기로 보게 하려면 같은 Wi-Fi 에서 공유 모드로 띄운다.
+```bash
+oss-lens web --host 0.0.0.0      # 터미널에 표시되는 http://<이 컴퓨터 IP>:8765 로 접속
+```
+공유 모드에서는 다른 사람이 이 컴퓨터의 폴더를 검사하지 못하도록 GitHub 주소만 받는다.
+기본 모드(이 컴퓨터만)는 다른 웹사이트가 몰래 검사를 시키지 못하도록 Host·Origin 을 확인한다.
+
+## 명령행 사용
 ```bash
 oss-lens scan examples/vulnerable-demo          # 데모용 취약 프로젝트
 oss-lens scan ~/my-project --top 10             # AI 해설 10개
@@ -83,7 +97,10 @@ pytest
 
 ```
 oss_lens/
-  cli.py        명령행 (scan, doctor)
+  cli.py        명령행 (scan, show, doctor, web)
+  pipeline.py   검사 한 번의 전체 흐름 (명령행·웹 UI 공용)
+  web.py        로컬 웹 서버 (표준 라이브러리 http.server)
+  web_pages.py  웹 UI 화면
   scanner.py    syft·grype·git 실행
   parsers.py    syft·grype JSON 파싱
   risk.py       위험 점수·업그레이드 명령·업그레이드 계획
