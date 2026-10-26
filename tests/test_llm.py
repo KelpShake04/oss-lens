@@ -13,8 +13,11 @@ from oss_lens.llm import (
     OllamaClient,
     build_messages,
     build_prompt,
+    key_terms,
     normalize_host,
     parse_response,
+    postprocess,
+    risk_conditions,
     rule_explanation,
     vuln_type_ko,
 )
@@ -98,6 +101,106 @@ def test_examples_follow_own_rules(vuln, answer):
 def test_examples_cover_with_and_without_workaround():
     steps = [len(re.findall(r"\d\) ", answer["action"])) for _, answer in EXAMPLES]
     assert sorted(steps) == [2, 3]
+    # 예시의 단계 수가 '위험 조건' 유무와 맞아야 모델이 규칙을 제대로 배운다
+    for vuln, answer in EXAMPLES:
+        assert postprocess(vuln, answer) == answer
+
+
+# 데모 프로젝트 실제 grype 설명 (NVD)
+DJANGO = ("Django 3.1.x before 3.1.13 and 3.2.x before 3.2.5 allows QuerySet.order_by SQL injection "
+          "if order_by is untrusted input from a client of a web application.")
+PYYAML = ("A vulnerability was discovered in the PyYAML library in versions before 5.4, where it is susceptible "
+          "to arbitrary code execution when it processes untrusted YAML files through the full_load method or "
+          "with the FullLoader loader. Applications that use the library to process untrusted input may be "
+          "vulnerable to this flaw.")
+EJS = ("The ejs (aka Embedded JavaScript templates) package 3.1.6 for Node.js allows server-side template "
+       "injection in settings[view options][outputFunctionName]. This is parsed as an internal option, and "
+       "overwrites the outputFunctionName option with an arbitrary OS command (which will be executed upon "
+       "template compilation).")
+PILLOW = ("Heap buffer overflow in libwebp in Google Chrome prior to 116.0.5845.187 and libwebp 1.3.2 allowed "
+          "a remote attacker to perform an out of bounds memory write via a crafted HTML page.")
+
+
+@pytest.mark.parametrize("desc,pkg,expected", [
+    (DJANGO, "django", ["QuerySet.order_by"]),
+    (PYYAML, "pyyaml", ["full_load", "FullLoader"]),  # 'PyYAML' 은 패키지 이름이라 제외
+    (EJS, "ejs", ["outputFunctionName"]),  # 'JavaScript', 'Node.js' 제외
+    ("Prototype Pollution via file index.js, function setKey() (lines 69-95).", "minimist", ["setKey()"]),
+    ("The Jinja `xmlattr` filter can be abused", "jinja2", ["xmlattr"]),
+    ("Prototype pollution attack when using _.zipObjectDeep in lodash", "lodash", ["_.zipObjectDeep"]),
+    (PILLOW, "pillow", []),
+])
+def test_key_terms(desc, pkg, expected):
+    assert key_terms(desc, pkg) == expected
+
+
+def test_risk_conditions():
+    assert risk_conditions(DJANGO) == ["if order_by is untrusted input from a client of a web application"]
+    assert risk_conditions(PYYAML)[0].startswith("when it processes untrusted YAML files through the full_load")
+    assert risk_conditions(EJS) == []
+    assert risk_conditions(PILLOW) == []
+    assert risk_conditions("Bad bug. There are no known workarounds for this issue.") == []
+    moment = EXAMPLES[1][0].description
+    assert [c.split()[0] for c in risk_conditions(moment)] == ["especially", "As"]
+
+
+def _answer(action="1) 올리세요. 2) 업로드 파일을 검사하세요. 3) 테스트하세요.", summary="요약입니다."):
+    return {"summary": summary, "impact": "영향입니다.", "action": action}
+
+
+def test_postprocess_drops_invented_workaround():
+    # pillow 실제 사례: 원문에 위험 조건이 없는데 임시 대응을 지어냄
+    out = postprocess(_v(description=PILLOW), _answer())
+    assert out["action"] == "1) 올리세요. 2) 테스트하세요."
+
+
+def test_postprocess_keeps_grounded_workaround():
+    action = "1) 3.1.13 이상으로 올리세요. 2) order_by에 사용자 입력을 넣지 마세요. 3) 테스트하세요."
+    assert postprocess(_v(description=DJANGO), _answer(action))["action"] == action
+    action = "1) 5.4 이상으로 올리세요. 2) full_load 대신 safe_load 를 쓰세요. 3) 테스트하세요."
+    assert postprocess(_v(description=PYYAML), _answer(action))["action"] == action
+
+
+def test_postprocess_drops_workaround_that_ignores_condition():
+    # django 실제 사례: 조건(order_by)과 무관하고 틀린 조언 ('string formatting')
+    action = ("1) django를 3.1.13 이상으로 올리세요. 2) 사용자 입력을 SQL 쿼리에 그대로 사용하지 않고, "
+              "ORM이나 파이썬의 string formatting 방식으로 처리하세요. 3) 접근 로그를 점검하세요.")
+    out = postprocess(_v(description=DJANGO), _answer(action))
+    assert out["action"] == "1) django를 3.1.13 이상으로 올리세요. 2) 접근 로그를 점검하세요."
+
+
+def test_postprocess_keeps_workaround_when_condition_has_no_names():
+    # moment: 조건에 함수 이름이 없어 언급 여부를 검사할 수 없으면 모델 답을 믿는다
+    vuln, answer = EXAMPLES[1]
+    assert postprocess(vuln, answer)["action"] == answer["action"]
+
+
+def test_postprocess_step_split_edge_cases():
+    no_cond = _v(description=PILLOW)
+    # 'CVSS 9.8)' 같은 숫자는 단계 구분이 아니다
+    action = "1) 10.0.1 이상(CVSS 9.8) 으로 올리세요. 2) 테스트하세요."
+    assert postprocess(no_cond, _answer(action))["action"] == action
+    # 번호 없는 답은 그대로
+    assert postprocess(no_cond, _answer("올리세요."))["action"] == "올리세요."
+    # 머리말은 남기고 가운데 단계만 지운다
+    out = postprocess(no_cond, _answer("다음을 하세요: 1) 올리세요. 2) 검사하세요. 3) 테스트하세요."))
+    assert out["action"] == "다음을 하세요: 1) 올리세요. 2) 테스트하세요."
+
+
+def test_postprocess_adds_missing_key_term():
+    out = postprocess(_v(description=DJANGO), _answer(summary="SQL 주입 취약점이 있습니다."))
+    assert out["summary"] == "SQL 주입 취약점이 있습니다. 관련 기능: QuerySet.order_by."
+    for summary in ("QuerySet.order_by 에서 SQL 주입이 있습니다.", "order_by 에 SQL 주입이 있습니다."):
+        assert "관련 기능" not in postprocess(_v(description=DJANGO), _answer(summary=summary))["summary"]
+    setkey = "Prototype Pollution via file index.js, function setKey() (lines 69-95)."
+    assert "관련 기능" not in postprocess(_v(description=setkey), _answer(summary="setKey 함수 문제"))["summary"]
+
+
+def test_build_prompt_gives_terms_and_conditions():
+    p = build_prompt(_v(description=DJANGO))
+    assert "원문 핵심 용어(summary 에 그대로 쓴다): QuerySet.order_by" in p
+    assert "위험 조건(원문): if order_by is untrusted input" in p
+    assert "위험 조건: 없음" in build_prompt(_v(description=PILLOW))
 
 
 def test_rule_explanation():

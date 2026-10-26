@@ -23,7 +23,7 @@ SYSTEM_PROMPT = """너는 오픈소스 보안 전문가다. 보안 지식이 많
 1. 한국어 존댓말(~합니다, ~하세요)로만 쓴다. 반말(~다, ~해라)은 쓰지 않는다.
 2. 원문 설명과 주어진 정보에 있는 사실만 쓴다. 버전·수치를 추측하지 않는다.
    원문에 code execution, command 같은 표현이 없으면 '코드 실행'이라고 쓰지 않는다.
-3. 원문에 나온 함수·옵션·조건 이름(예: order_by, full_load)은 영어 그대로 summary 에 넣는다.
+3. '원문 핵심 용어'가 주어지면 summary 에 영어 그대로 넣는다.
 4. 전문용어는 처음 나올 때 괄호로 짧게 풀어 쓴다.
 5. 업그레이드 명령어는 리포트에 따로 표시되므로 쓰지 않는다. 버전 번호만 쓴다.
 6. JSON 으로만 답한다.
@@ -33,7 +33,9 @@ SYSTEM_PROMPT = """너는 오픈소스 보안 전문가다. 보안 지식이 많
 - impact: 공격자가 할 수 있는 일과 그 결과를 2문장으로.
 - action: 번호를 붙인 단계.
   1) 올릴 버전.
-  2) 원문에 우회 방법이나 위험 조건(예: 특정 함수에 사용자 입력을 넣을 때)이 있으면 그에 맞춘 임시 대응. 없으면 이 단계는 뺀다.
+  2) '위험 조건'이 주어졌을 때만: 그 조건을 피하는 구체적인 임시 대응.
+     '필터링하세요', '검증하세요' 같은 일반 조언이나 원문에 없는 방법은 쓰지 않는다.
+     '위험 조건: 없음'이면 이 단계를 쓰지 않는다.
   마지막) 업그레이드 후 확인할 점."""
 
 # 말투·길이·형식을 맞추기 위한 예시 (데모 프로젝트에 없는 취약점).
@@ -100,14 +102,14 @@ VULN_TYPES = [
     (r"cross[- ]site scripting|\bxss\b", "크로스사이트 스크립팅(XSS, 웹페이지에 악성 스크립트 삽입)"),
     (r"server[- ]side request forgery|\bssrf\b", "서버 측 요청 위조(SSRF, 서버가 내부망에 요청하도록 유도)"),
     (r"path traversal|directory traversal", "경로 조작(허용되지 않은 파일 접근)"),
-    (r"regular expression denial|inefficient regular expression|redos","정규식 서비스 거부(ReDoS, 느린 정규식으로 서버를 멈춤)"),
+    (r"regular expression denial|inefficient regular expression|redos", "정규식 서비스 거부(ReDoS, 느린 정규식으로 서버를 멈춤)"),
     (r"denial of service|\bdos\b|resource exhaustion|uncontrolled resource", "서비스 거부(DoS, 서버를 느리게 하거나 멈춤)"),
     (r"open redirect", "오픈 리다이렉트(악성 사이트로 이동 유도)"),
     (r"crlf injection|header injection", "헤더 주입(HTTP 응답·요청 조작)"),
     (r"deserializ", "안전하지 않은 역직렬화(데이터를 읽다가 코드가 실행됨)"),
     (r"authentication bypass|improper authentication|signature verification", "인증 우회(로그인·서명 검증을 건너뜀)"),
     (r"information (disclosure|exposure)|sensitive information|leak", "정보 노출(민감한 데이터 유출)"),
-    (r"buffer overflow|out-of-bounds|heap overflow|use[- ]after[- ]free", "메모리 손상(버퍼 오버플로 등, 크래시·코드 실행 가능)"),
+    (r"buffer overflow|out-of-bounds|heap overflow|use[- ]after[- ]free", "메모리 손상(버퍼 오버플로 등, 허용 범위 밖 메모리를 읽거나 씀)"),
 ]
 
 
@@ -117,6 +119,52 @@ def vuln_type_ko(description: str) -> str | None:
         if re.search(pattern, low):
             return ko
     return None
+
+
+# 코드 식별자처럼 보이지만 제품·언어 이름인 것
+_NOT_TERMS = {"javascript", "typescript", "github", "gitlab", "pypi", "nodejs", "macos", "ios",
+              "jquery", "graphql", "postgresql", "mysql", "mongodb", "openssl", "webassembly"}
+_IDENT = re.compile(r"[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*(?:\(\))?")
+
+
+def key_terms(description: str, package: str = "") -> list[str]:
+    """원문에서 함수·옵션 이름(order_by, full_load, setKey(), outputFunctionName)을 뽑는다.
+
+    작은 모델은 '원문의 함수 이름을 써라' 같은 규칙보다 이름 목록을 직접 줄 때 잘 따른다.
+    """
+    desc = description or ""
+    found = re.findall(r"`([^`]+)`", desc)
+    for tok in _IDENT.findall(desc):
+        low = tok.lower()
+        if low in _NOT_TERMS or low == package.lower():
+            continue
+        if "_" in tok or tok.endswith("()") or re.search(r"[a-z][A-Z]", tok):
+            found.append(tok)
+    terms: list[str] = []
+    for t in found:
+        if t not in terms:
+            terms.append(t)
+    # 'QuerySet.order_by' 가 있으면 'order_by' 는 생략
+    return [t for t in terms if not any(t != o and t in o for o in terms)][:4]
+
+
+_CONDITION = re.compile(r"\b(?:especially if|if|when|unless|as a workaround)\b.*", re.IGNORECASE)
+_NO_WORKAROUND = re.compile(r"\bno (?:known )?workarounds?\b", re.IGNORECASE)
+
+
+def risk_conditions(description: str) -> list[str]:
+    """원문의 위험 조건·우회 방법 구절 ('if order_by is untrusted input ...').
+
+    이 구절이 없으면 임시 대응을 지어내기 쉬우므로, 모델 답에서도 그 단계를 지운다.
+    """
+    out = []
+    for sentence in re.split(r"(?<=[.!?])\s+", description or ""):
+        if _NO_WORKAROUND.search(sentence):
+            continue
+        m = _CONDITION.search(sentence)
+        if m:
+            out.append(m.group(0).strip().rstrip("."))
+    return out[:3]
 
 
 def normalize_host(host: str | None) -> str:
@@ -196,6 +244,14 @@ def build_prompt(v: Vulnerability) -> str:
     vtype = vuln_type_ko(v.description)
     if vtype:
         lines.append(f"취약점 유형(참고): {vtype}")
+    terms = key_terms(v.description, v.package)
+    if terms:
+        lines.append(f"원문 핵심 용어(summary 에 그대로 쓴다): {', '.join(terms)}")
+    conds = risk_conditions(v.description)
+    if conds:
+        lines.append(f"위험 조건(원문): {' / '.join(conds)}")
+    else:
+        lines.append("위험 조건: 없음 (임시 대응 단계를 쓰지 않는다)")
     lines.append(f"원문 설명(영어): {v.description[:1500] or '없음'}")
     return "\n".join(lines)
 
@@ -209,11 +265,44 @@ def build_messages(v: Vulnerability) -> list[dict]:
     return messages
 
 
-def _ensure_kev(v: Vulnerability, parsed: dict) -> dict:
-    """KEV 등재 사실은 모델이 빠뜨려도 반드시 보이게 한다."""
-    if v.known_exploited and "실제 공격" not in parsed["impact"]:
-        parsed = {**parsed, "impact": f"{KEV_SENTENCE} {parsed['impact']}"}
-    return parsed
+_STEP = re.compile(r"(?:^|(?<=\s))\d\)\s+")  # '9.8) ' 같은 숫자는 단계로 보지 않는다
+
+
+def _split_steps(action: str) -> tuple[str, list[str]]:
+    preamble, *rest = _STEP.split(action)  # 첫 '1)' 앞의 머리말은 단계가 아니다
+    return preamble.strip(), [s.strip() for s in rest if s.strip()]
+
+
+def _mentions(text: str, terms: list[str]) -> bool:
+    """'QuerySet.order_by' 는 'order_by', 'setKey()' 는 'setKey' 만 써도 언급한 것으로 본다."""
+    low = text.lower()
+    return any(t.lower().removesuffix("()").split(".")[-1] in low for t in terms)
+
+
+def postprocess(v: Vulnerability, parsed: dict) -> dict:
+    """모델이 지키지 못한 규칙을 코드로 보정한다.
+
+    - KEV 등재 사실은 반드시 보인다.
+    - 원문 핵심 용어가 요약에 없으면 덧붙인다.
+    - 근거 없는 임시 대응은 지운다: 원문에 위험 조건이 없거나, 조건에 나온 함수 이름을
+      임시 대응이 언급하지 않을 때 (예: order_by 조건에 'string formatting 을 쓰라'는 틀린 조언).
+    """
+    out = dict(parsed)
+    if v.known_exploited and "실제 공격" not in out["impact"]:
+        out["impact"] = f"{KEV_SENTENCE} {out['impact']}"
+    terms = key_terms(v.description, v.package)
+    if terms and not _mentions(out["summary"], terms):
+        out["summary"] = f"{out['summary']} 관련 기능: {', '.join(terms[:2])}."
+
+    preamble, steps = _split_steps(out["action"])
+    if len(steps) > 2:
+        conds = risk_conditions(v.description)
+        anchors = key_terms(" ".join(conds), v.package)
+        grounded = conds and (not anchors or _mentions(" ".join(steps[1:-1]), anchors))
+        if not grounded:
+            kept = " ".join(f"{i}) {s}" for i, s in enumerate([steps[0], steps[-1]], 1))
+            out["action"] = f"{preamble} {kept}".strip()
+    return out
 
 
 def parse_response(content: str) -> dict | None:
@@ -292,7 +381,7 @@ class Explainer:
         if parsed is None:
             self.errors.append(f"{v.id}: LLM 응답을 해석하지 못했습니다")
             return rule_explanation(v)
-        parsed = _ensure_kev(v, parsed)
+        parsed = postprocess(v, parsed)
         self.cache[key] = parsed
         self._save()
         return Explanation(**parsed, source="llm")
