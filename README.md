@@ -4,6 +4,21 @@
 
 2026 하반기 우송대 SW중심대학 오픈소스 AI·SW활용 경진대회 출품작.
 
+[![CI](https://github.com/KelpShake04/oss-lens/actions/workflows/ci.yml/badge.svg)](https://github.com/KelpShake04/oss-lens/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
+![진단 리포트: 요약 카드와 먼저 고칠 취약점, 한국어 AI 해설, 복사 가능한 업그레이드 명령](docs/images/report.png)
+
+## 30초 시작하기
+```bash
+brew install syft grype && brew install ollama && ollama pull qwen3:8b
+git clone https://github.com/KelpShake04/oss-lens.git && cd oss-lens
+python3 -m oss_lens scan examples/vulnerable-demo     # 결과: out/vulnerable-demo/report.html
+```
+Ollama 없이 규칙 기반 설명만 보려면 `--no-llm` 을 붙인다. 웹 화면은 `python3 -m oss_lens web`.
+
+![웹 UI: 폴더나 GitHub 주소를 넣고 검사 시작](docs/images/web.png)
+
 ## 구성 (사용 오픈소스)
 - [syft](https://github.com/anchore/syft) (Apache-2.0): SBOM 생성
 - [grype](https://github.com/anchore/grype) (Apache-2.0): 취약점 매칭
