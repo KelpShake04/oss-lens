@@ -71,7 +71,9 @@ def test_build_prompt_includes_facts():
     assert "npm install" not in p  # 명령어는 리포트가 따로 보여준다 (모델이 잘라먹던 문제)
     assert "/package-lock.json" in p
     assert "CISA KEV): 없음" in p
-    assert KEV_SENTENCE in build_prompt(_v(known_exploited=True))
+    kev = build_prompt(_v(known_exploited=True))
+    assert "CISA KEV): 있음" in kev
+    assert KEV_SENTENCE not in kev  # 모델이 summary 에도 넣어 중복되던 문제 (pillow)
     assert "패치 버전: 없음" in build_prompt(_v(fix_versions=[]))
 
 

@@ -235,10 +235,8 @@ def build_prompt(v: Vulnerability) -> str:
     ]
     if v.epss is not None:
         lines.append(f"30일 내 악용 확률(EPSS): {v.epss:.1%}")
-    if v.known_exploited:
-        lines.append(f"실제 공격 사례(CISA KEV): 있음 — impact 첫 문장에 '{KEV_SENTENCE}' 를 쓴다")
-    else:
-        lines.append("실제 공격 사례(CISA KEV): 없음")
+    # KEV 문장은 postprocess 가 impact 앞에 붙인다. 모델에게 쓰라고 하면 summary 에도 넣어 중복된다.
+    lines.append(f"실제 공격 사례(CISA KEV): {'있음' if v.known_exploited else '없음'}")
     fix = min_fix_version(v)
     lines.append(f"패치 버전: {fix} 이상" if fix else "패치 버전: 없음 (action 1 에 패치가 없다고 쓴다)")
     vtype = vuln_type_ko(v.description)
