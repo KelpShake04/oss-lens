@@ -41,6 +41,9 @@ oss-lens web --host 0.0.0.0      # 터미널에 표시되는 http://<이 컴퓨�
 공유 모드에서는 다른 사람이 이 컴퓨터의 폴더를 검사하지 못하도록 GitHub 주소만 받는다.
 기본 모드(이 컴퓨터만)는 다른 웹사이트가 몰래 검사를 시키지 못하도록 Host·Origin 을 확인한다.
 
+남는 안드로이드 폰을 리포트 서버로 쓰려면 `oss-lens web --view-only` (검사 기능 없이 보기만):
+[docs/deploy-android.md](docs/deploy-android.md) — 맥에서 검사하고 `scripts/push-reports.sh` 로 올리면 Tailscale 로 어디서나 본다.
+
 ## 명령행 사용
 ```bash
 oss-lens scan examples/vulnerable-demo          # 데모용 취약 프로젝트

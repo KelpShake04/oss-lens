@@ -60,9 +60,11 @@ class Job:
 
 class App:
     def __init__(self, out_dir: Path, allow_local: bool, model: str = DEFAULT_MODEL,
-                 ollama_host: Optional[str] = None):
+                 ollama_host: Optional[str] = None, allow_scan: bool = True):
         self.out_dir = Path(out_dir)
         self.allow_local = allow_local
+        # 보기 전용: 검사는 다른 컴퓨터(맥)에서 하고 리포트만 받아 보여준다 (안드로이드 공기계 등)
+        self.allow_scan = allow_scan
         self.model = model
         self.ollama_host = ollama_host
         self.jobs: dict[str, Job] = {}
@@ -189,6 +191,8 @@ class App:
         return self._tools[name]
 
     def status(self) -> dict:
+        if not self.allow_scan:  # 검사 도구·Ollama 가 없는 기기이므로 확인하지 않는다
+            return {"version": __version__, "allow_scan": False, "allow_local": False, "samples": []}
         client = OllamaClient(host=self.ollama_host, model=self.model)
         reason = client.check()  # Ollama 는 도중에 켜고 끌 수 있으니 매번 확인
         samples = list(SAMPLES)
@@ -199,6 +203,7 @@ class App:
             "syft": self._tool("syft"),
             "grype": self._tool("grype"),
             "llm": {"ok": reason is None, "model": self.model, "host": client.host, "reason": reason},
+            "allow_scan": True,
             "allow_local": self.allow_local,
             "samples": samples,
         }
@@ -272,6 +277,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(403, {"error": "허용되지 않은 주소입니다."})
         if urlsplit(self.path).path != "/api/scan":
             return self._json(404, {"error": "페이지를 찾을 수 없습니다."})
+        if not self.app.allow_scan:
+            return self._json(403, {"error": "보기 전용 서버입니다. 검사는 oss-lens 가 설치된 컴퓨터에서 하세요."})
         # JSON 만 받는다: 다른 사이트의 폼 전송은 브라우저가 사전 확인(preflight) 없이 못 보낸다
         if not (self.headers.get("Content-Type") or "").startswith("application/json"):
             return self._json(415, {"error": "JSON 요청만 받습니다."})
@@ -307,15 +314,19 @@ def make_server(app: App, host: str, port: int) -> ThreadingHTTPServer:
 
 
 def serve(out: str = "out", host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True,
-          model: str = DEFAULT_MODEL, ollama_host: Optional[str] = None) -> None:
-    app = App(Path(out), allow_local=is_loopback(host), model=model, ollama_host=ollama_host)
+          model: str = DEFAULT_MODEL, ollama_host: Optional[str] = None, view_only: bool = False) -> None:
+    app = App(Path(out), allow_local=is_loopback(host) and not view_only, model=model,
+              ollama_host=ollama_host, allow_scan=not view_only)
     server = make_server(app, host, port)
     port = server.server_address[1]
     url = f"http://localhost:{port}/"
     print(f"oss-lens 웹 UI: {url}  (끄려면 Ctrl+C)")
-    if not app.allow_local:
+    if not is_loopback(host):
         shared = host if host not in ("0.0.0.0", "::") else lan_ip()
         print(f"다른 기기에서 접속: http://{shared}:{port}/")
+    if view_only:
+        print(f"보기 전용 모드: 검사 기능을 끄고 {Path(out).resolve()} 의 리포트만 보여줍니다.")
+    elif not app.allow_local:
         print("! 공유 모드: 같은 네트워크의 누구나 접속할 수 있습니다. 이 컴퓨터의 폴더 검사는 꺼지고 GitHub 주소만 받습니다.")
     if open_browser:
         threading.Timer(0.5, webbrowser.open, args=(url,)).start()

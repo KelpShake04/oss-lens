@@ -152,6 +152,27 @@ def test_shared_mode_only_accepts_github(shared_web):
     assert _req(f"{shared_web}/", headers={"Host": "192.168.0.10:8765"})[0] == 200
 
 
+def test_view_only_mode(tmp_path):
+    # 맥에서 만든 리포트를 그대로 복사해 둔 상태 (scripts/push-reports.sh 결과)
+    assert pipeline.run(pipeline.ScanOptions(
+        target=str(DEMO), out=str(tmp_path / "out"), use_llm=False,
+        sbom=str(FIXTURES / "syft-demo.json"), grype_json=str(FIXTURES / "grype-demo.json")))
+    app = App(tmp_path / "out", allow_local=False, allow_scan=False, ollama_host="127.0.0.1:1")
+    server = make_server(app, "127.0.0.1", 0)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{server.server_address[1]}"
+    try:
+        s = json.loads(_req(f"{base}/api/status")[2])
+        assert s["allow_scan"] is False and s["samples"] == []
+        status, _, body = _scan(base, "https://github.com/owner/repo")
+        assert status == 403 and "보기 전용" in body
+        assert [r["name"] for r in json.loads(_req(f"{base}/api/reports")[2])] == ["vulnerable-demo"]
+        assert _req(f"{base}/reports/vulnerable-demo/report.html")[0] == 200
+        assert _req(f"{base}/view/vulnerable-demo")[0] == 200
+    finally:
+        server.shutdown()
+
+
 @pytest.mark.parametrize("host,expected", [
     ("127.0.0.1", True), ("localhost", True), ("::1", True), ("127.0.0.2", True),
     ("0.0.0.0", False), ("192.168.0.10", False), ("evil.example", False),

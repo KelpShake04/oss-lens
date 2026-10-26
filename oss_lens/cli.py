@@ -83,7 +83,7 @@ def cmd_web(args: argparse.Namespace) -> int:
 
     try:
         serve(out=args.out, host=args.host, port=args.port, open_browser=not args.no_browser,
-              model=args.model, ollama_host=args.ollama_host)
+              model=args.model, ollama_host=args.ollama_host, view_only=args.view_only)
     except OSError as e:  # 포트 사용 중 등
         log(f"웹 서버를 시작할 수 없습니다: {e} (--port 로 다른 포트를 지정하세요)")
         return 1
@@ -127,6 +127,8 @@ def build_parser() -> argparse.ArgumentParser:
     w.add_argument("--host", default="127.0.0.1",
                    help="기본 127.0.0.1(이 컴퓨터만). 0.0.0.0 이면 같은 네트워크에 공유(GitHub 주소만 검사)")
     w.add_argument("--no-browser", action="store_true", help="브라우저를 자동으로 열지 않음")
+    w.add_argument("--view-only", action="store_true",
+                   help="검사 기능을 끄고 리포트만 보여줌 (syft·grype·Ollama 없는 기기용, 예: 안드로이드 공기계)")
     llm_opts(w)
     w.set_defaults(func=cmd_web)
     return p

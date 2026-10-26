@@ -88,8 +88,10 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);color:v
   <p class="lead">폴더나 GitHub 주소를 넣으면 오픈소스 의존성의 취약점(CVE)과 라이선스 위험을 찾아
   한국어로 위험도·영향·고치는 법을 알려 드립니다. 소스코드는 이 컴퓨터 밖으로 나가지 않습니다.</p>
   <div class="chips" id="status"><span class="chip">도구 확인 중…</span></div>
+  <p class="hint" id="viewonly" hidden>보기 전용 서버입니다. 검사는 oss-lens 가 설치된 컴퓨터에서 하고,
+  리포트를 이 서버로 올리면 아래 목록에 나타납니다.</p>
 
-  <section class="card">
+  <section class="card" id="scancard">
     <form id="scan">
       <label class="big" for="target">검사할 폴더 경로 또는 GitHub 주소</label>
       <div class="row">
@@ -137,6 +139,13 @@ async function api(path, opts) {
 async function loadStatus() {
   const s = await api("/api/status");
   const chip = (ok, text, cls) => `<span class="chip ${cls || (ok ? "ok" : "bad")}">${esc(text)}</span>`;
+  $("#ver").textContent = "oss-lens " + s.version;
+  if (!s.allow_scan) {
+    $("#status").innerHTML = chip(true, "보기 전용 서버");
+    $("#scancard").hidden = true;
+    $("#viewonly").hidden = false;
+    return;
+  }
   $("#status").innerHTML =
     chip(s.syft, s.syft ? "syft 준비됨" : "syft 없음") +
     chip(s.grype, s.grype ? "grype 준비됨" : "grype 없음") +
@@ -150,7 +159,6 @@ async function loadStatus() {
   if (!s.syft || !s.grype) hints.push("syft·grype 가 필요합니다: brew install syft grype");
   if (!s.llm.ok) { $("#use_llm").checked = false; hints.push(s.llm.reason + " (없어도 규칙 기반 한국어 설명으로 리포트를 만듭니다)"); }
   $("#hint").textContent = hints.join(" · ");
-  $("#ver").textContent = "oss-lens " + s.version;
 }
 
 async function loadReports() {
