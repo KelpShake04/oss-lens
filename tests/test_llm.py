@@ -187,6 +187,26 @@ def test_postprocess_step_split_edge_cases():
     assert out["action"] == "다음을 하세요: 1) 올리세요. 2) 테스트하세요."
 
 
+def test_postprocess_drops_unsupported_code_execution_claim():
+    # minimist 실제 사례: 원문에 실행 언급이 없는데 '악의적인 코드 실행'을 주장
+    minimist = "Minimist <=1.2.5 is vulnerable to Prototype Pollution via file index.js, function setKey() (lines 69-95)."
+    impact = ("공격자가 특별한 문자열을 입력하면 객체의 기본 속성이 변경되어 예상치 못한 동작이 발생할 수 있습니다. "
+              "이로 인해 악의적인 코드 실행이나 데이터 조작이 가능해집니다.")
+    out = postprocess(_v(description=minimist), {**_answer(), "impact": impact})
+    assert out["impact"] == "공격자가 특별한 문자열을 입력하면 객체의 기본 속성이 변경되어 예상치 못한 동작이 발생할 수 있습니다."
+    # pillow: KEV 문장은 지운 뒤에 붙는다
+    out = postprocess(_v(description=PILLOW, known_exploited=True),
+                      {**_answer(), "impact": "메모리를 덮어씁니다. 이로 인해 악성 코드 실행이 가능해질 수 있습니다."})
+    assert out["impact"] == f"{KEV_SENTENCE} 메모리를 덮어씁니다."
+
+
+def test_postprocess_keeps_code_execution_when_source_says_so():
+    impact = "공격자가 YAML 로 코드를 실행할 수 있습니다. 서버가 장악될 수 있습니다."
+    assert postprocess(_v(description=PYYAML), {**_answer(), "impact": impact})["impact"] == impact
+    impact = "서버에서 OS 명령을 실행할 수 있습니다."
+    assert postprocess(_v(description=EJS), {**_answer(), "impact": impact})["impact"] == impact
+
+
 def test_postprocess_adds_missing_key_term():
     out = postprocess(_v(description=DJANGO), _answer(summary="SQL 주입 취약점이 있습니다."))
     assert out["summary"] == "SQL 주입 취약점이 있습니다. 관련 기능: QuerySet.order_by."

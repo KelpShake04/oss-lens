@@ -77,35 +77,41 @@ def _epss(vuln: dict) -> float | None:
 
 
 def parse_grype(data: dict) -> list[Vulnerability]:
-    """grype matches -> Vulnerability 목록. 같은 (취약점, 패키지, 버전)은 하나로 합친다."""
+    """grype matches -> Vulnerability 목록. 같은 (취약점, 패키지, 버전)은 하나로 합친다.
+
+    언어 패키지는 보통 GHSA 레코드로 매치되고, 그 설명은 한 줄 제목뿐이다
+    ('Prototype Pollution in minimist'). 자세한 NVD 원문은 relatedVulnerabilities 의
+    CVE 레코드에 있으므로 ID 는 CVE 로, 설명은 가장 긴 것으로 고른다.
+    (grype --by-cve 는 ID 만 바꾸고 NVD 원문을 버리므로 쓰지 않는다.)
+    """
     merged: dict[tuple, Vulnerability] = {}
     for m in data.get("matches", []):
         v = m.get("vulnerability", {})
         art = m.get("artifact", {})
-        related = m.get("relatedVulnerabilities") or []
+        records = [v] + list(m.get("relatedVulnerabilities") or [])
 
-        description = v.get("description") or next(
-            (r.get("description") for r in related if r.get("description")), ""
-        )
-        cvss = _best_cvss(v.get("cvss"))
-        if cvss is None:
-            cvss = _best_cvss([c for r in related for c in r.get("cvss") or []])
+        ids = [r.get("id") for r in records if r.get("id")]
+        main_id = next((i for i in ids if i.startswith("CVE-")), ids[0] if ids else "")
+        description = max((r.get("description") or "" for r in records), key=len)
         fix = v.get("fix") or {}
+        urls = []
+        for r in records:
+            urls.extend(u for u in r.get("urls") or [] if u not in urls)
 
         vuln = Vulnerability(
-            id=v.get("id", ""),
+            id=main_id,
             severity=v.get("severity") or "Unknown",
             package=art.get("name", ""),
             version=art.get("version", ""),
             pkg_type=art.get("type", ""),
-            description=(description or "").strip(),
-            cvss_score=cvss,
-            epss=_epss(v),
-            known_exploited=bool(v.get("knownExploited")),
+            description=description.strip(),
+            cvss_score=_best_cvss([c for r in records for c in r.get("cvss") or []]),
+            epss=max(filter(None, (_epss(r) for r in records)), default=None),
+            known_exploited=any(r.get("knownExploited") for r in records),
             fix_versions=list(fix.get("versions") or []),
             fix_state=fix.get("state") or "unknown",
-            urls=list(v.get("urls") or []),
-            aliases=[r.get("id") for r in related if r.get("id") and r.get("id") != v.get("id")],
+            urls=urls,
+            aliases=[i for i in dict.fromkeys(ids) if i != main_id],
             locations=_location_paths(art.get("locations")),
         )
 

@@ -39,21 +39,49 @@ def test_parse_grype_fields(grype_data):
     assert v.fix_state == "fixed"
     assert v.aliases == ["GHSA-xvch-5gv4-984h"]
     assert v.locations == ["/package-lock.json"]
-    assert "Prototype Pollution" in v.description
+    # GHSA 제목('Prototype Pollution in minimist')이 아니라 NVD 원문을 써야 함수 이름이 남는다
+    assert "function setKey()" in v.description
 
 
-def test_parse_grype_uses_related_description_and_cvss():
+def test_parse_grype_prefers_cve_id_and_longest_description():
     data = {"matches": [{
-        "vulnerability": {"id": "GHSA-x", "severity": "High", "fix": {"versions": [], "state": "not-fixed"}},
-        "relatedVulnerabilities": [{"id": "CVE-1", "description": "from nvd",
-                                    "cvss": [{"metrics": {"baseScore": 8.1}}]}],
+        "vulnerability": {"id": "GHSA-x", "severity": "High", "description": "SQL Injection in Django",
+                          "fix": {"versions": [], "state": "not-fixed"}},
+        "relatedVulnerabilities": [{"id": "CVE-1", "description": "allows QuerySet.order_by SQL injection if ...",
+                                    "cvss": [{"metrics": {"baseScore": 8.1}}], "knownExploited": [{"cve": "CVE-1"}]}],
         "artifact": {"name": "p", "version": "1", "type": "npm"},
     }]}
     v = parse_grype(data)[0]
-    assert v.description == "from nvd"
+    assert v.id == "CVE-1"
+    assert v.aliases == ["GHSA-x"]
+    assert v.description == "allows QuerySet.order_by SQL injection if ..."
     assert v.cvss_score == 8.1
+    assert v.known_exploited is True
     assert v.fix_state == "not-fixed"
-    assert v.aliases == ["CVE-1"]
+
+
+def test_parse_grype_legacy_by_cve_output():
+    # 예전 --by-cve 결과: ID 는 CVE 지만 설명은 GHSA 제목뿐 (최선을 다해 읽는다)
+    data = {"matches": [{
+        "vulnerability": {"id": "CVE-1", "severity": "High", "description": "Prototype Pollution in minimist"},
+        "relatedVulnerabilities": [{"id": "GHSA-x", "description": "Prototype Pollution in minimist"}],
+        "artifact": {"name": "minimist", "version": "1.2.5", "type": "npm"},
+    }]}
+    v = parse_grype(data)[0]
+    assert (v.id, v.aliases, v.description) == ("CVE-1", ["GHSA-x"], "Prototype Pollution in minimist")
+
+
+def test_parse_grype_merges_ghsa_and_cve_matches_of_same_issue():
+    art = {"name": "p", "version": "1", "type": "npm"}
+    data = {"matches": [
+        {"vulnerability": {"id": "GHSA-x", "severity": "High"},
+         "relatedVulnerabilities": [{"id": "CVE-1"}], "artifact": art},
+        {"vulnerability": {"id": "CVE-1", "severity": "Critical", "namespace": "nvd:cpe"},
+         "relatedVulnerabilities": [], "artifact": art},
+    ]}
+    vulns = parse_grype(data)
+    assert len(vulns) == 1
+    assert vulns[0].id == "CVE-1" and vulns[0].severity == "Critical"
 
 
 def test_descriptor_version(syft_data, grype_data):

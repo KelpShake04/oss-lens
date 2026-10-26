@@ -2,18 +2,18 @@
  "matches": [
   {
    "vulnerability": {
-    "id": "CVE-2021-44906",
-    "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2021-44906",
-    "namespace": "nvd:cpe",
+    "id": "GHSA-xvch-5gv4-984h",
+    "dataSource": "https://github.com/advisories/GHSA-xvch-5gv4-984h",
+    "namespace": "github:language:javascript",
     "severity": "Critical",
     "urls": [
      "https://github.com/advisories/GHSA-xvch-5gv4-984h"
     ],
-    "description": "Minimist <=1.2.5 is vulnerable to Prototype Pollution via file index.js, function setKey() (lines 69-95).",
+    "description": "Prototype Pollution in minimist",
     "cvss": [
      {
-      "source": "nvd@nist.gov",
-      "type": "Primary",
+      "source": "security-advisories@github.com",
+      "type": "Secondary",
       "version": "3.1",
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
       "metrics": {
@@ -40,13 +40,24 @@
    },
    "relatedVulnerabilities": [
     {
-     "id": "GHSA-xvch-5gv4-984h",
-     "dataSource": "https://github.com/advisories/GHSA-xvch-5gv4-984h",
-     "namespace": "github:language:javascript",
+     "id": "CVE-2021-44906",
+     "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2021-44906",
+     "namespace": "nvd:cpe",
      "severity": "Critical",
      "urls": [],
-     "description": "",
-     "cvss": []
+     "description": "Minimist <=1.2.5 is vulnerable to Prototype Pollution via file index.js, function setKey() (lines 69-95).",
+     "cvss": [
+      {
+       "source": "nvd@nist.gov",
+       "type": "Primary",
+       "version": "3.1",
+       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+       "metrics": {
+        "baseScore": 9.8
+       },
+       "vendorMetadata": {}
+      }
+     ]
     }
    ],
    "matchDetails": [
@@ -78,18 +89,18 @@
   },
   {
    "vulnerability": {
-    "id": "CVE-2020-8203",
-    "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2020-8203",
-    "namespace": "nvd:cpe",
+    "id": "GHSA-p6mc-m468-83gw",
+    "dataSource": "https://github.com/advisories/GHSA-p6mc-m468-83gw",
+    "namespace": "github:language:javascript",
     "severity": "High",
     "urls": [
      "https://github.com/advisories/GHSA-p6mc-m468-83gw"
     ],
-    "description": "Prototype pollution attack when using _.zipObjectDeep in lodash before 4.17.20.",
+    "description": "Prototype Pollution in lodash",
     "cvss": [
      {
-      "source": "nvd@nist.gov",
-      "type": "Primary",
+      "source": "security-advisories@github.com",
+      "type": "Secondary",
       "version": "3.1",
       "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:H",
       "metrics": {
@@ -108,13 +119,24 @@
    },
    "relatedVulnerabilities": [
     {
-     "id": "GHSA-p6mc-m468-83gw",
-     "dataSource": "https://github.com/advisories/GHSA-p6mc-m468-83gw",
-     "namespace": "github:language:javascript",
+     "id": "CVE-2020-8203",
+     "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2020-8203",
+     "namespace": "nvd:cpe",
      "severity": "High",
      "urls": [],
-     "description": "",
-     "cvss": []
+     "description": "Prototype pollution attack when using _.zipObjectDeep in lodash before 4.17.20.",
+     "cvss": [
+      {
+       "source": "nvd@nist.gov",
+       "type": "Primary",
+       "version": "3.1",
+       "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:H",
+       "metrics": {
+        "baseScore": 7.4
+       },
+       "vendorMetadata": {}
+      }
+     ]
     }
    ],
    "matchDetails": [
@@ -146,18 +168,18 @@
   },
   {
    "vulnerability": {
-    "id": "CVE-2021-23337",
-    "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2021-23337",
-    "namespace": "nvd:cpe",
+    "id": "GHSA-35jh-r3h4-6jhm",
+    "dataSource": "https://github.com/advisories/GHSA-35jh-r3h4-6jhm",
+    "namespace": "github:language:javascript",
     "severity": "High",
     "urls": [
      "https://github.com/advisories/GHSA-35jh-r3h4-6jhm"
     ],
-    "description": "Lodash versions prior to 4.17.21 are vulnerable to Command Injection via the template function.",
+    "description": "Command Injection in lodash",
     "cvss": [
      {
-      "source": "nvd@nist.gov",
-      "type": "Primary",
+      "source": "security-advisories@github.com",
+      "type": "Secondary",
       "version": "3.1",
       "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
       "metrics": {
@@ -176,13 +198,24 @@
    },
    "relatedVulnerabilities": [
     {
-     "id": "GHSA-35jh-r3h4-6jhm",
-     "dataSource": "https://github.com/advisories/GHSA-35jh-r3h4-6jhm",
-     "namespace": "github:language:javascript",
+     "id": "CVE-2021-23337",
+     "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2021-23337",
+     "namespace": "nvd:cpe",
      "severity": "High",
      "urls": [],
-     "description": "",
-     "cvss": []
+     "description": "Lodash versions prior to 4.17.21 are vulnerable to Command Injection via the template function.",
+     "cvss": [
+      {
+       "source": "nvd@nist.gov",
+       "type": "Primary",
+       "version": "3.1",
+       "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+       "metrics": {
+        "baseScore": 7.2
+       },
+       "vendorMetadata": {}
+      }
+     ]
     }
    ],
    "matchDetails": [
@@ -214,18 +247,18 @@
   },
   {
    "vulnerability": {
-    "id": "CVE-2022-29078",
-    "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2022-29078",
-    "namespace": "nvd:cpe",
+    "id": "GHSA-phwq-j96m-2c2q",
+    "dataSource": "https://github.com/advisories/GHSA-phwq-j96m-2c2q",
+    "namespace": "github:language:javascript",
     "severity": "Critical",
     "urls": [
      "https://github.com/advisories/GHSA-phwq-j96m-2c2q"
     ],
-    "description": "The ejs (aka Embedded JavaScript templates) package 3.1.6 for Node.js allows server-side template injection in settings[view options][outputFunctionName]. This is parsed as an internal option, and overwrites the outputFunctionName option with an arbitrary OS command (which will be executed upon template compilation).",
+    "description": "ejs template injection vulnerability",
     "cvss": [
      {
-      "source": "nvd@nist.gov",
-      "type": "Primary",
+      "source": "security-advisories@github.com",
+      "type": "Secondary",
       "version": "3.1",
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
       "metrics": {
@@ -244,13 +277,24 @@
    },
    "relatedVulnerabilities": [
     {
-     "id": "GHSA-phwq-j96m-2c2q",
-     "dataSource": "https://github.com/advisories/GHSA-phwq-j96m-2c2q",
-     "namespace": "github:language:javascript",
+     "id": "CVE-2022-29078",
+     "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2022-29078",
+     "namespace": "nvd:cpe",
      "severity": "Critical",
      "urls": [],
-     "description": "",
-     "cvss": []
+     "description": "The ejs (aka Embedded JavaScript templates) package 3.1.6 for Node.js allows server-side template injection in settings[view options][outputFunctionName]. This is parsed as an internal option, and overwrites the outputFunctionName option with an arbitrary OS command (which will be executed upon template compilation).",
+     "cvss": [
+      {
+       "source": "nvd@nist.gov",
+       "type": "Primary",
+       "version": "3.1",
+       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+       "metrics": {
+        "baseScore": 9.8
+       },
+       "vendorMetadata": {}
+      }
+     ]
     }
    ],
    "matchDetails": [
@@ -282,18 +326,18 @@
   },
   {
    "vulnerability": {
-    "id": "CVE-2020-28168",
-    "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2020-28168",
-    "namespace": "nvd:cpe",
+    "id": "GHSA-4w2v-q235-vp99",
+    "dataSource": "https://github.com/advisories/GHSA-4w2v-q235-vp99",
+    "namespace": "github:language:javascript",
     "severity": "Medium",
     "urls": [
      "https://github.com/advisories/GHSA-4w2v-q235-vp99"
     ],
-    "description": "Axios NPM package 0.21.0 contains a Server-Side Request Forgery (SSRF) vulnerability where an attacker is able to bypass a proxy by providing a URL that responds with a redirect to a restricted host or IP address.",
+    "description": "Server-Side Request Forgery in Axios",
     "cvss": [
      {
-      "source": "nvd@nist.gov",
-      "type": "Primary",
+      "source": "security-advisories@github.com",
+      "type": "Secondary",
       "version": "3.1",
       "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N",
       "metrics": {
@@ -312,13 +356,24 @@
    },
    "relatedVulnerabilities": [
     {
-     "id": "GHSA-4w2v-q235-vp99",
-     "dataSource": "https://github.com/advisories/GHSA-4w2v-q235-vp99",
-     "namespace": "github:language:javascript",
+     "id": "CVE-2020-28168",
+     "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2020-28168",
+     "namespace": "nvd:cpe",
      "severity": "Medium",
      "urls": [],
-     "description": "",
-     "cvss": []
+     "description": "Axios NPM package 0.21.0 contains a Server-Side Request Forgery (SSRF) vulnerability where an attacker is able to bypass a proxy by providing a URL that responds with a redirect to a restricted host or IP address.",
+     "cvss": [
+      {
+       "source": "nvd@nist.gov",
+       "type": "Primary",
+       "version": "3.1",
+       "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N",
+       "metrics": {
+        "baseScore": 5.9
+       },
+       "vendorMetadata": {}
+      }
+     ]
     }
    ],
    "matchDetails": [
@@ -350,18 +405,18 @@
   },
   {
    "vulnerability": {
-    "id": "CVE-2020-14343",
-    "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2020-14343",
-    "namespace": "nvd:cpe",
+    "id": "GHSA-8q59-q68h-6hv4",
+    "dataSource": "https://github.com/advisories/GHSA-8q59-q68h-6hv4",
+    "namespace": "github:language:python",
     "severity": "Critical",
     "urls": [
      "https://github.com/advisories/GHSA-8q59-q68h-6hv4"
     ],
-    "description": "A vulnerability was discovered in the PyYAML library in versions before 5.4, where it is susceptible to arbitrary code execution when it processes untrusted YAML files through the full_load method or with the FullLoader loader. Applications that use the library to process untrusted input may be vulnerable to this flaw.",
+    "description": "Improper Input Validation in PyYAML",
     "cvss": [
      {
-      "source": "nvd@nist.gov",
-      "type": "Primary",
+      "source": "security-advisories@github.com",
+      "type": "Secondary",
       "version": "3.1",
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
       "metrics": {
@@ -380,13 +435,24 @@
    },
    "relatedVulnerabilities": [
     {
-     "id": "GHSA-8q59-q68h-6hv4",
-     "dataSource": "https://github.com/advisories/GHSA-8q59-q68h-6hv4",
-     "namespace": "github:language:python",
+     "id": "CVE-2020-14343",
+     "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2020-14343",
+     "namespace": "nvd:cpe",
      "severity": "Critical",
      "urls": [],
-     "description": "",
-     "cvss": []
+     "description": "A vulnerability was discovered in the PyYAML library in versions before 5.4, where it is susceptible to arbitrary code execution when it processes untrusted YAML files through the full_load method or with the FullLoader loader. Applications that use the library to process untrusted input may be vulnerable to this flaw.",
+     "cvss": [
+      {
+       "source": "nvd@nist.gov",
+       "type": "Primary",
+       "version": "3.1",
+       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+       "metrics": {
+        "baseScore": 9.8
+       },
+       "vendorMetadata": {}
+      }
+     ]
     }
    ],
    "matchDetails": [
@@ -418,18 +484,18 @@
   },
   {
    "vulnerability": {
-    "id": "CVE-2024-22195",
-    "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2024-22195",
-    "namespace": "nvd:cpe",
+    "id": "GHSA-h5c8-rqwp-cp95",
+    "dataSource": "https://github.com/advisories/GHSA-h5c8-rqwp-cp95",
+    "namespace": "github:language:python",
     "severity": "Medium",
     "urls": [
      "https://github.com/advisories/GHSA-h5c8-rqwp-cp95"
     ],
-    "description": "Jinja is an extensible templating engine. The Jinja `xmlattr` filter can be abused to inject arbitrary HTML attribute keys and values, bypassing the auto escaping mechanism and may lead to cross-site scripting (XSS).",
+    "description": "Jinja vulnerable to HTML attribute injection when passing user input as keys to xmlattr filter",
     "cvss": [
      {
-      "source": "nvd@nist.gov",
-      "type": "Primary",
+      "source": "security-advisories@github.com",
+      "type": "Secondary",
       "version": "3.1",
       "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:R/S:C/C:L/I:L/A:N",
       "metrics": {
@@ -448,13 +514,24 @@
    },
    "relatedVulnerabilities": [
     {
-     "id": "GHSA-h5c8-rqwp-cp95",
-     "dataSource": "https://github.com/advisories/GHSA-h5c8-rqwp-cp95",
-     "namespace": "github:language:python",
+     "id": "CVE-2024-22195",
+     "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2024-22195",
+     "namespace": "nvd:cpe",
      "severity": "Medium",
      "urls": [],
-     "description": "",
-     "cvss": []
+     "description": "Jinja is an extensible templating engine. The Jinja `xmlattr` filter can be abused to inject arbitrary HTML attribute keys and values, bypassing the auto escaping mechanism and may lead to cross-site scripting (XSS).",
+     "cvss": [
+      {
+       "source": "nvd@nist.gov",
+       "type": "Primary",
+       "version": "3.1",
+       "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:R/S:C/C:L/I:L/A:N",
+       "metrics": {
+        "baseScore": 5.4
+       },
+       "vendorMetadata": {}
+      }
+     ]
     }
    ],
    "matchDetails": [
@@ -486,18 +563,18 @@
   },
   {
    "vulnerability": {
-    "id": "CVE-2021-44906",
-    "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2021-44906",
-    "namespace": "nvd:cpe",
+    "id": "GHSA-xvch-5gv4-984h",
+    "dataSource": "https://github.com/advisories/GHSA-xvch-5gv4-984h",
+    "namespace": "github:language:javascript",
     "severity": "Critical",
     "urls": [
      "https://github.com/advisories/GHSA-xvch-5gv4-984h"
     ],
-    "description": "Minimist <=1.2.5 is vulnerable to Prototype Pollution via file index.js, function setKey() (lines 69-95).",
+    "description": "Prototype Pollution in minimist",
     "cvss": [
      {
-      "source": "nvd@nist.gov",
-      "type": "Primary",
+      "source": "security-advisories@github.com",
+      "type": "Secondary",
       "version": "3.1",
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
       "metrics": {
@@ -524,13 +601,24 @@
    },
    "relatedVulnerabilities": [
     {
-     "id": "GHSA-xvch-5gv4-984h",
-     "dataSource": "https://github.com/advisories/GHSA-xvch-5gv4-984h",
-     "namespace": "github:language:javascript",
+     "id": "CVE-2021-44906",
+     "dataSource": "https://nvd.nist.gov/vuln/detail/CVE-2021-44906",
+     "namespace": "nvd:cpe",
      "severity": "Critical",
      "urls": [],
-     "description": "",
-     "cvss": []
+     "description": "Minimist <=1.2.5 is vulnerable to Prototype Pollution via file index.js, function setKey() (lines 69-95).",
+     "cvss": [
+      {
+       "source": "nvd@nist.gov",
+       "type": "Primary",
+       "version": "3.1",
+       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+       "metrics": {
+        "baseScore": 9.8
+       },
+       "vendorMetadata": {}
+      }
+     ]
     }
    ],
    "matchDetails": [

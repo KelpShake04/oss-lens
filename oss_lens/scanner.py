@@ -71,9 +71,13 @@ def run_syft(target: Path, out_path: Path, remote_licenses: bool = False, timeou
 
 
 def run_grype(sbom_path: Path, out_path: Path, timeout: int = 900) -> dict:
-    """SBOM을 grype로 검사. --by-cve 로 GHSA 등을 CVE 번호 기준으로 맞춘다."""
+    """SBOM을 grype로 검사.
+
+    --by-cve 는 쓰지 않는다: ID 만 CVE 로 바꾸고 자세한 NVD 설명을 버린다.
+    CVE 기준 정리는 parsers.parse_grype 가 한다.
+    """
     grype = require_tool("grype")
-    proc = _run([grype, f"sbom:{sbom_path}", "-o", "json", "--by-cve", "-q"], timeout)
+    proc = _run([grype, f"sbom:{sbom_path}", "-o", "json", "-q"], timeout)
     out_path.write_text(proc.stdout, encoding="utf-8")
     return json.loads(proc.stdout)
 

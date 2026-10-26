@@ -279,15 +279,30 @@ def _mentions(text: str, terms: list[str]) -> bool:
     return any(t.lower().removesuffix("()").split(".")[-1] in low for t in terms)
 
 
+_CODE_EXEC_KO = re.compile(r"코드\s*(?:를|가)?\s*실행|명령(?:어)?\s*(?:를|을)?\s*실행")
+_CODE_EXEC_EN = re.compile(r"execut|command|\brce\b", re.IGNORECASE)
+
+
+def _drop_unsupported_code_exec(impact: str, description: str) -> str:
+    """원문에 실행(execution·command) 언급이 없는데 '코드 실행'을 말하는 문장은 지운다."""
+    if _CODE_EXEC_EN.search(description or ""):
+        return impact
+    sentences = re.split(r"(?<=[.!?])\s+", impact.strip())
+    kept = [s for s in sentences if not _CODE_EXEC_KO.search(s)]
+    return " ".join(kept) if kept else impact
+
+
 def postprocess(v: Vulnerability, parsed: dict) -> dict:
     """모델이 지키지 못한 규칙을 코드로 보정한다.
 
+    - 원문에 없는 '코드 실행' 주장은 지운다.
     - KEV 등재 사실은 반드시 보인다.
     - 원문 핵심 용어가 요약에 없으면 덧붙인다.
     - 근거 없는 임시 대응은 지운다: 원문에 위험 조건이 없거나, 조건에 나온 함수 이름을
       임시 대응이 언급하지 않을 때 (예: order_by 조건에 'string formatting 을 쓰라'는 틀린 조언).
     """
     out = dict(parsed)
+    out["impact"] = _drop_unsupported_code_exec(out["impact"], v.description)
     if v.known_exploited and "실제 공격" not in out["impact"]:
         out["impact"] = f"{KEV_SENTENCE} {out['impact']}"
     terms = key_terms(v.description, v.package)
@@ -334,7 +349,7 @@ def rule_explanation(v: Vulnerability) -> Explanation:
     if v.epss is not None:
         impact.append(f"30일 내 악용 가능성 추정치는 {v.epss:.1%} 입니다(EPSS).")
     if v.cvss_score is not None and v.cvss_score >= 9.0:
-        impact.append("원격에서 큰 피해(코드 실행·데이터 유출 등)로 이어질 수 있는 수준입니다.")
+        impact.append(f"CVSS {v.cvss_score:.1f} 로 가장 위험한 등급입니다.")
     if v.description:
         desc = v.description if len(v.description) <= 300 else v.description[:300] + "…"
         impact.append(f"원문 설명: {desc}")
