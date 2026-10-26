@@ -1,0 +1,570 @@
+{
+ "artifacts": [
+  {
+   "id": "e5caaf3964524d67",
+   "name": "@ckeditor/ckeditor5-build-classic",
+   "version": "35.4.0",
+   "type": "npm",
+   "foundBy": "javascript-lock-cataloger",
+   "locations": [
+    {
+     "path": "/package-lock.json",
+     "accessPath": "/package-lock.json",
+     "annotations": {
+      "evidence": "primary"
+     }
+    }
+   ],
+   "licenses": [
+    {
+     "value": "GPL-2.0-or-later",
+     "spdxExpression": "GPL-2.0-or-later",
+     "type": "declared",
+     "urls": [],
+     "locations": [
+      {
+       "path": "/package-lock.json",
+       "accessPath": "/package-lock.json",
+       "annotations": {
+        "evidence": "primary"
+       }
+      }
+     ]
+    }
+   ],
+   "language": "javascript",
+   "purl": "pkg:npm/%40ckeditor/ckeditor5-build-classic@35.4.0",
+   "metadataType": "javascript-npm-package-lock-entry",
+   "metadata": {
+    "resolved": "https://registry.npmjs.org/@ckeditor/ckeditor5-build-classic/-/ckeditor5-build-classic-35.4.0.tgz",
+    "integrity": "",
+    "dependencies": null
+   }
+  },
+  {
+   "id": "304f2adf9e7a1306",
+   "name": "@img/sharp-libvips-linux-x64",
+   "version": "1.0.4",
+   "type": "npm",
+   "foundBy": "javascript-lock-cataloger",
+   "locations": [
+    {
+     "path": "/package-lock.json",
+     "accessPath": "/package-lock.json",
+     "annotations": {
+      "evidence": "primary"
+     }
+    }
+   ],
+   "licenses": [
+    {
+     "value": "LGPL-3.0-or-later",
+     "spdxExpression": "LGPL-3.0-or-later",
+     "type": "declared",
+     "urls": [],
+     "locations": [
+      {
+       "path": "/package-lock.json",
+       "accessPath": "/package-lock.json",
+       "annotations": {
+        "evidence": "primary"
+       }
+      }
+     ]
+    }
+   ],
+   "language": "javascript",
+   "purl": "pkg:npm/%40img/sharp-libvips-linux-x64@1.0.4",
+   "metadataType": "javascript-npm-package-lock-entry",
+   "metadata": {
+    "resolved": "https://registry.npmjs.org/@img/sharp-libvips-linux-x64/-/sharp-libvips-linux-x64-1.0.4.tgz",
+    "integrity": "",
+    "dependencies": null
+   }
+  },
+  {
+   "id": "36c7e5aa40f81786",
+   "name": "axios",
+   "version": "0.21.0",
+   "type": "npm",
+   "foundBy": "javascript-lock-cataloger",
+   "locations": [
+    {
+     "path": "/package-lock.json",
+     "accessPath": "/package-lock.json",
+     "annotations": {
+      "evidence": "primary"
+     }
+    }
+   ],
+   "licenses": [
+    {
+     "value": "MIT",
+     "spdxExpression": "MIT",
+     "type": "declared",
+     "urls": [],
+     "locations": [
+      {
+       "path": "/package-lock.json",
+       "accessPath": "/package-lock.json",
+       "annotations": {
+        "evidence": "primary"
+       }
+      }
+     ]
+    }
+   ],
+   "language": "javascript",
+   "purl": "pkg:npm/axios@0.21.0",
+   "metadataType": "javascript-npm-package-lock-entry",
+   "metadata": {
+    "resolved": "https://registry.npmjs.org/axios/-/axios-0.21.0.tgz",
+    "integrity": "",
+    "dependencies": {
+     "follow-redirects": "^1.10.0"
+    }
+   }
+  },
+  {
+   "id": "68a323b9d0c06e81",
+   "name": "django",
+   "version": "3.1.0",
+   "type": "python",
+   "foundBy": "python-package-cataloger",
+   "locations": [
+    {
+     "path": "/requirements.txt",
+     "accessPath": "/requirements.txt",
+     "annotations": {
+      "evidence": "primary"
+     }
+    }
+   ],
+   "licenses": [],
+   "language": "python",
+   "purl": "pkg:pypi/django@3.1.0",
+   "metadataType": "python-pip-requirements-entry",
+   "metadata": {
+    "name": "Django",
+    "versionConstraint": "==3.1.0"
+   }
+  },
+  {
+   "id": "fb858fbec68f9743",
+   "name": "ejs",
+   "version": "3.1.6",
+   "type": "npm",
+   "foundBy": "javascript-lock-cataloger",
+   "locations": [
+    {
+     "path": "/package-lock.json",
+     "accessPath": "/package-lock.json",
+     "annotations": {
+      "evidence": "primary"
+     }
+    }
+   ],
+   "licenses": [
+    {
+     "value": "Apache-2.0",
+     "spdxExpression": "Apache-2.0",
+     "type": "declared",
+     "urls": [],
+     "locations": [
+      {
+       "path": "/package-lock.json",
+       "accessPath": "/package-lock.json",
+       "annotations": {
+        "evidence": "primary"
+       }
+      }
+     ]
+    }
+   ],
+   "language": "javascript",
+   "purl": "pkg:npm/ejs@3.1.6",
+   "metadataType": "javascript-npm-package-lock-entry",
+   "metadata": {
+    "resolved": "https://registry.npmjs.org/ejs/-/ejs-3.1.6.tgz",
+    "integrity": "",
+    "dependencies": null
+   }
+  },
+  {
+   "id": "a13efd8cb7a38645",
+   "name": "follow-redirects",
+   "version": "1.13.0",
+   "type": "npm",
+   "foundBy": "javascript-lock-cataloger",
+   "locations": [
+    {
+     "path": "/package-lock.json",
+     "accessPath": "/package-lock.json",
+     "annotations": {
+      "evidence": "primary"
+     }
+    }
+   ],
+   "licenses": [
+    {
+     "value": "MIT",
+     "spdxExpression": "MIT",
+     "type": "declared",
+     "urls": [],
+     "locations": [
+      {
+       "path": "/package-lock.json",
+       "accessPath": "/package-lock.json",
+       "annotations": {
+        "evidence": "primary"
+       }
+      }
+     ]
+    }
+   ],
+   "language": "javascript",
+   "purl": "pkg:npm/follow-redirects@1.13.0",
+   "metadataType": "javascript-npm-package-lock-entry",
+   "metadata": {
+    "resolved": "https://registry.npmjs.org/follow-redirects/-/follow-redirects-1.13.0.tgz",
+    "integrity": "",
+    "dependencies": null
+   }
+  },
+  {
+   "id": "ad8c276dbb845508",
+   "name": "jinja2",
+   "version": "2.11.2",
+   "type": "python",
+   "foundBy": "python-package-cataloger",
+   "locations": [
+    {
+     "path": "/requirements.txt",
+     "accessPath": "/requirements.txt",
+     "annotations": {
+      "evidence": "primary"
+     }
+    }
+   ],
+   "licenses": [],
+   "language": "python",
+   "purl": "pkg:pypi/jinja2@2.11.2",
+   "metadataType": "python-pip-requirements-entry",
+   "metadata": {
+    "name": "Jinja2",
+    "versionConstraint": "==2.11.2"
+   }
+  },
+  {
+   "id": "1751c203d0e356b9",
+   "name": "jsonwebtoken",
+   "version": "8.5.1",
+   "type": "npm",
+   "foundBy": "javascript-lock-cataloger",
+   "locations": [
+    {
+     "path": "/package-lock.json",
+     "accessPath": "/package-lock.json",
+     "annotations": {
+      "evidence": "primary"
+     }
+    }
+   ],
+   "licenses": [
+    {
+     "value": "MIT",
+     "spdxExpression": "MIT",
+     "type": "declared",
+     "urls": [],
+     "locations": [
+      {
+       "path": "/package-lock.json",
+       "accessPath": "/package-lock.json",
+       "annotations": {
+        "evidence": "primary"
+       }
+      }
+     ]
+    }
+   ],
+   "language": "javascript",
+   "purl": "pkg:npm/jsonwebtoken@8.5.1",
+   "metadataType": "javascript-npm-package-lock-entry",
+   "metadata": {
+    "resolved": "https://registry.npmjs.org/jsonwebtoken/-/jsonwebtoken-8.5.1.tgz",
+    "integrity": "",
+    "dependencies": null
+   }
+  },
+  {
+   "id": "70059750020cd564",
+   "name": "lodash",
+   "version": "4.17.15",
+   "type": "npm",
+   "foundBy": "javascript-lock-cataloger",
+   "locations": [
+    {
+     "path": "/package-lock.json",
+     "accessPath": "/package-lock.json",
+     "annotations": {
+      "evidence": "primary"
+     }
+    }
+   ],
+   "licenses": [
+    {
+     "value": "MIT",
+     "spdxExpression": "MIT",
+     "type": "declared",
+     "urls": [],
+     "locations": [
+      {
+       "path": "/package-lock.json",
+       "accessPath": "/package-lock.json",
+       "annotations": {
+        "evidence": "primary"
+       }
+      }
+     ]
+    }
+   ],
+   "language": "javascript",
+   "purl": "pkg:npm/lodash@4.17.15",
+   "metadataType": "javascript-npm-package-lock-entry",
+   "metadata": {
+    "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.15.tgz",
+    "integrity": "",
+    "dependencies": null
+   }
+  },
+  {
+   "id": "3338a0ed79172aeb",
+   "name": "minimist",
+   "version": "1.2.5",
+   "type": "npm",
+   "foundBy": "javascript-lock-cataloger",
+   "locations": [
+    {
+     "path": "/package-lock.json",
+     "accessPath": "/package-lock.json",
+     "annotations": {
+      "evidence": "primary"
+     }
+    }
+   ],
+   "licenses": [
+    {
+     "value": "MIT",
+     "spdxExpression": "MIT",
+     "type": "declared",
+     "urls": [],
+     "locations": [
+      {
+       "path": "/package-lock.json",
+       "accessPath": "/package-lock.json",
+       "annotations": {
+        "evidence": "primary"
+       }
+      }
+     ]
+    }
+   ],
+   "language": "javascript",
+   "purl": "pkg:npm/minimist@1.2.5",
+   "metadataType": "javascript-npm-package-lock-entry",
+   "metadata": {
+    "resolved": "https://registry.npmjs.org/minimist/-/minimist-1.2.5.tgz",
+    "integrity": "",
+    "dependencies": null
+   }
+  },
+  {
+   "id": "fd39a2af409bd7a3",
+   "name": "node-forge",
+   "version": "0.10.0",
+   "type": "npm",
+   "foundBy": "javascript-lock-cataloger",
+   "locations": [
+    {
+     "path": "/package-lock.json",
+     "accessPath": "/package-lock.json",
+     "annotations": {
+      "evidence": "primary"
+     }
+    }
+   ],
+   "licenses": [
+    {
+     "value": "(BSD-3-Clause OR GPL-2.0)",
+     "spdxExpression": "(BSD-3-Clause OR GPL-2.0)",
+     "type": "declared",
+     "urls": [],
+     "locations": [
+      {
+       "path": "/package-lock.json",
+       "accessPath": "/package-lock.json",
+       "annotations": {
+        "evidence": "primary"
+       }
+      }
+     ]
+    }
+   ],
+   "language": "javascript",
+   "purl": "pkg:npm/node-forge@0.10.0",
+   "metadataType": "javascript-npm-package-lock-entry",
+   "metadata": {
+    "resolved": "https://registry.npmjs.org/node-forge/-/node-forge-0.10.0.tgz",
+    "integrity": "",
+    "dependencies": null
+   }
+  },
+  {
+   "id": "9aa070069d1f6d6d",
+   "name": "pillow",
+   "version": "8.0.0",
+   "type": "python",
+   "foundBy": "python-package-cataloger",
+   "locations": [
+    {
+     "path": "/requirements.txt",
+     "accessPath": "/requirements.txt",
+     "annotations": {
+      "evidence": "primary"
+     }
+    }
+   ],
+   "licenses": [],
+   "language": "python",
+   "purl": "pkg:pypi/pillow@8.0.0",
+   "metadataType": "python-pip-requirements-entry",
+   "metadata": {
+    "name": "Pillow",
+    "versionConstraint": "==8.0.0"
+   }
+  },
+  {
+   "id": "134b010929e18315",
+   "name": "pyyaml",
+   "version": "5.3.1",
+   "type": "python",
+   "foundBy": "python-package-cataloger",
+   "locations": [
+    {
+     "path": "/requirements.txt",
+     "accessPath": "/requirements.txt",
+     "annotations": {
+      "evidence": "primary"
+     }
+    }
+   ],
+   "licenses": [],
+   "language": "python",
+   "purl": "pkg:pypi/pyyaml@5.3.1",
+   "metadataType": "python-pip-requirements-entry",
+   "metadata": {
+    "name": "PyYAML",
+    "versionConstraint": "==5.3.1"
+   }
+  },
+  {
+   "id": "4490ba0ca521985d",
+   "name": "requests",
+   "version": "2.25.0",
+   "type": "python",
+   "foundBy": "python-package-cataloger",
+   "locations": [
+    {
+     "path": "/requirements.txt",
+     "accessPath": "/requirements.txt",
+     "annotations": {
+      "evidence": "primary"
+     }
+    }
+   ],
+   "licenses": [],
+   "language": "python",
+   "purl": "pkg:pypi/requests@2.25.0",
+   "metadataType": "python-pip-requirements-entry",
+   "metadata": {
+    "name": "requests",
+    "versionConstraint": "==2.25.0"
+   }
+  },
+  {
+   "id": "28e3ab818faf5e0d",
+   "name": "urllib3",
+   "version": "1.26.4",
+   "type": "python",
+   "foundBy": "python-package-cataloger",
+   "locations": [
+    {
+     "path": "/requirements.txt",
+     "accessPath": "/requirements.txt",
+     "annotations": {
+      "evidence": "primary"
+     }
+    }
+   ],
+   "licenses": [],
+   "language": "python",
+   "purl": "pkg:pypi/urllib3@1.26.4",
+   "metadataType": "python-pip-requirements-entry",
+   "metadata": {
+    "name": "urllib3",
+    "versionConstraint": "==1.26.4"
+   }
+  },
+  {
+   "id": "7c7a9a22e00e7a67",
+   "name": "vulnerable-demo",
+   "version": "1.0.0",
+   "type": "npm",
+   "foundBy": "javascript-lock-cataloger",
+   "locations": [
+    {
+     "path": "/package-lock.json",
+     "accessPath": "/package-lock.json",
+     "annotations": {
+      "evidence": "primary"
+     }
+    }
+   ],
+   "licenses": [],
+   "language": "javascript",
+   "purl": "pkg:npm/vulnerable-demo@1.0.0",
+   "metadataType": "javascript-npm-package-lock-entry",
+   "metadata": {
+    "resolved": "",
+    "integrity": "",
+    "dependencies": {
+     "@ckeditor/ckeditor5-build-classic": "35.4.0",
+     "@img/sharp-libvips-linux-x64": "1.0.4",
+     "axios": "0.21.0",
+     "ejs": "3.1.6",
+     "jsonwebtoken": "8.5.1",
+     "lodash": "4.17.15",
+     "minimist": "1.2.5",
+     "node-forge": "0.10.0"
+    }
+   }
+  }
+ ],
+ "source": {
+  "id": "cdb4ee2aea69cc6a83331bbe96dc2caa9a299d21329efb0336fc02a82e1839a8",
+  "name": ".",
+  "version": "",
+  "type": "directory",
+  "metadata": {
+   "path": "."
+  }
+ },
+ "descriptor": {
+  "name": "syft",
+  "version": "1.55.0"
+ },
+ "schema": {
+  "version": "16.1.11",
+  "url": "https://raw.githubusercontent.com/anchore/syft/main/schema/json/schema-16.1.11.json"
+ }
+}

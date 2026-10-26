@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "oss-lens"
+version = "0.1.0"
+description = "오픈소스 의존성 보안·라이선스 진단기 (syft + grype + 로컬 LLM 한국어 해설)"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+oss-lens = "oss_lens.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["oss_lens*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
