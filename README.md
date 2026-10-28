@@ -19,6 +19,29 @@ Ollama 없이 규칙 기반 설명만 보려면 `--no-llm` 을 붙인다. 웹 �
 
 ![웹 UI: 폴더나 GitHub 주소를 넣고 검사 시작](docs/images/web.png)
 
+## Docker 로 실행 (Windows·Linux·macOS)
+syft·grype·git 이 들어 있는 이미지라 Docker 만 있으면 된다 (linux/amd64, linux/arm64).
+```bash
+# 현재 폴더를 검사 → ./oss-lens-out/project/report.html
+docker run --rm \
+  -v oss-lens-grype-db:/cache/grype \
+  -v "$PWD:/project:ro" \
+  -v "$PWD/oss-lens-out:/work/out" \
+  ghcr.io/kelpshake04/oss-lens scan /project
+
+# 이미지에 포함된 데모 프로젝트
+docker run --rm -v oss-lens-grype-db:/cache/grype -v "$PWD/oss-lens-out:/work/out" \
+  ghcr.io/kelpshake04/oss-lens scan /opt/oss-lens/examples/vulnerable-demo
+
+# 웹 UI (컨테이너에서는 공유 모드라 GitHub 주소만 검사)
+docker run --rm -p 127.0.0.1:8765:8765 -v oss-lens-grype-db:/cache/grype \
+  ghcr.io/kelpshake04/oss-lens web --host 0.0.0.0 --no-browser
+```
+- 첫 실행은 grype 취약점 DB 를 내려받느라 몇 분 걸린다. `oss-lens-grype-db` 볼륨에 저장돼 다음부터는 빠르다.
+- AI 해설은 호스트의 Ollama(`http://host.docker.internal:11434`)를 쓴다. Linux 에서는 `--add-host=host.docker.internal:host-gateway` 를 붙이고, Ollama 를 `OLLAMA_HOST=0.0.0.0 ollama serve` 로 띄운다. 연결이 안 되면 규칙 기반 설명으로 대체한다.
+- 컨테이너는 uid 1000 으로 돈다. Linux 에서 결과 폴더 권한 오류가 나면 `mkdir -p oss-lens-out && chmod a+w oss-lens-out` 후 다시 실행한다. (`--user` 로 uid 를 바꾸면 DB 볼륨 권한이 섞이므로 권하지 않는다)
+- Windows PowerShell 에서는 `$PWD` 대신 `${PWD}`, 줄바꿈 `\` 대신 `` ` `` 를 쓴다.
+
 ## 구성 (사용 오픈소스)
 - [syft](https://github.com/anchore/syft) (Apache-2.0): SBOM 생성
 - [grype](https://github.com/anchore/grype) (Apache-2.0): 취약점 매칭
