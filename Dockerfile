@@ -1,8 +1,8 @@
 # oss-lens 실행 이미지: Python + syft + grype + git. LLM(Ollama)은 호스트 것을 OLLAMA_HOST 로 쓴다.
 FROM python:3.12-slim
 
-ARG SYFT_VERSION=1.55.0
-ARG GRYPE_VERSION=0.121.0
+ARG SYFT_VERSION=1.56.0
+ARG GRYPE_VERSION=0.121.1
 ARG TARGETARCH
 
 RUN apt-get update \
