@@ -98,3 +98,13 @@ def test_upgrade_plan_groups_by_package():
     assert lodash["fixed"] == 2
     assert lodash["command"] == "npm install lodash@^4.17.21"
     assert plans[2]["target"] is None and plans[2]["unfixed"] == 1 and plans[2]["command"] is None
+
+
+def test_malware_ranked_first_and_flagged():
+    vulns = rank([
+        _v(id="CVE-9", severity="Critical", cvss_score=9.8, known_exploited=True, package="a"),
+        _v(id="GHSA-xv2f-5jw4-v95m", severity="Critical", description="Malware in fsevents", package="fsevents"),
+        _v(id="GHSA-zzzz", severity="Medium", aliases=["MAL-2023-1"], package="b"),
+    ])
+    assert [v.package for v in vulns] == ["fsevents", "b", "a"]
+    assert vulns[0].is_malware and vulns[1].is_malware and not vulns[2].is_malware

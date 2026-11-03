@@ -97,3 +97,12 @@ def test_descriptor_version(syft_data, grype_data):
     assert descriptor_version(syft_data) == "1.55.0"
     assert descriptor_version(grype_data) == "0.121.0"
     assert descriptor_version({}) is None
+
+
+def test_descriptor_db_built_and_timestamp():
+    from oss_lens.parsers import descriptor_db_built, descriptor_timestamp
+    d = {"descriptor": {"timestamp": "2026-10-26T16:07:55.287802+09:00",
+                        "db": {"status": {"built": "2026-10-25T06:27:34Z"}}}}
+    assert descriptor_db_built(d) == "2026-10-25T06:27:34Z"
+    assert descriptor_timestamp(d) == "2026-10-26T16:07:55.287802+09:00"
+    assert descriptor_db_built({"descriptor": {}}) is None and descriptor_timestamp({}) is None

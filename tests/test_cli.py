@@ -126,3 +126,26 @@ def test_html_escapes_untrusted_text():
     assert "<script>alert(1)</script>" not in html
     assert "&lt;script&gt;" in html
     assert 'href="javascript:' not in html
+
+
+def test_scan_shows_db_date_and_warns_when_old(tmp_path):
+    g = json.loads((FIXTURES / "grype-demo.json").read_text(encoding="utf-8"))
+    g["descriptor"]["timestamp"] = "2026-10-26T16:07:55+09:00"
+    g["descriptor"]["db"] = {"status": {"built": "2026-10-25T06:27:34Z"}}
+    old = tmp_path / "grype-old.json"
+    old.write_text(json.dumps(g), encoding="utf-8")
+    assert main(["scan", str(DEMO), "-o", str(tmp_path), "--sbom", str(FIXTURES / "syft-demo.json"),
+                 "--grype-json", str(old), "--no-llm"]) == 0
+    out = tmp_path / "vulnerable-demo"
+    data = json.loads((out / "report.json").read_text(encoding="utf-8"))
+    html = (out / "report.html").read_text(encoding="utf-8")
+    assert data["vuln_db_built"] == "2026-10-25T06:27:34Z"
+    assert "취약점 DB 2026-10-25" in html and "검사 2026-10-26 16:07" in html
+    assert any("취약점 DB가" in n and "다시 검사" in n for n in data["notes"])
+
+
+def test_scan_without_db_descriptor_has_no_db_note(tmp_path):
+    assert _scan(tmp_path) == 0
+    data = json.loads((tmp_path / "vulnerable-demo" / "report.json").read_text(encoding="utf-8"))
+    assert data["vuln_db_built"] is None
+    assert not any("취약점 DB가" in n for n in data["notes"])

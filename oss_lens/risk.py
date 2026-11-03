@@ -42,7 +42,7 @@ def rank(vulns: list[Vulnerability]) -> list[Vulnerability]:
         v.score = score(v)
     return sorted(
         vulns,
-        key=lambda v: (-v.score, -severity_rank(v.severity), v.package.lower(), v.id),
+        key=lambda v: (not v.is_malware, -v.score, -severity_rank(v.severity), v.package.lower(), v.id),
     )
 
 

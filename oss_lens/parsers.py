@@ -132,3 +132,13 @@ def parse_grype(data: dict) -> list[Vulnerability]:
 
 def descriptor_version(data: dict) -> str | None:
     return (data.get("descriptor") or {}).get("version")
+
+
+def descriptor_db_built(data: dict) -> str | None:
+    """grype 취약점 DB 빌드 시각. v6는 db.status.built."""
+    db = (data.get("descriptor") or {}).get("db") or {}
+    return (db.get("status") or {}).get("built") or db.get("built")
+
+
+def descriptor_timestamp(data: dict) -> str | None:
+    return (data.get("descriptor") or {}).get("timestamp")

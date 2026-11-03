@@ -6,7 +6,7 @@ import json
 import re
 import shutil
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -15,6 +15,7 @@ from .llm import DEFAULT_MODEL, Explainer, OllamaClient
 from .models import Report
 from .report import render_html, render_json
 
+STALE_DB_DAYS = 7  # 이보다 오래된 취약점 DB면 다시 검사하라고 알림
 GITHUB_URL = re.compile(r"^https://github\.com/[\w.-]+/[\w.-]+(\.git)?/?$")
 
 # (메시지, 진행률 0~1)
@@ -107,6 +108,10 @@ def run(opts: ScanOptions, progress: Progress = lambda msg, frac: None) -> ScanR
             progress(f"2/4 취약점 검사 중 (grype, 패키지 {len(packages)}개)...", 0.25)
             vuln_data = scanner.run_grype(sbom_path, out_dir / "grype.json")
         vulns = risk.rank(parsers.parse_grype(vuln_data))
+        db_built = parsers.descriptor_db_built(vuln_data)
+        db_age = (date.today() - date.fromisoformat(db_built[:10])).days if db_built else 0
+        if db_age > STALE_DB_DAYS:
+            notes.append(f"취약점 DB가 {db_age}일 전({db_built[:10]}) 것입니다. 그 뒤 공개된 취약점은 빠져 있으니 다시 검사하세요.")
 
         # 3) 라이선스
         progress("3/4 라이선스 점검 중...", 0.45)
@@ -146,6 +151,8 @@ def run(opts: ScanOptions, progress: Progress = lambda msg, frac: None) -> ScanR
             },
             llm_model=client.model if client else None,
             notes=notes,
+            vuln_db_built=db_built,
+            vuln_scanned_at=parsers.descriptor_timestamp(vuln_data),
         )
         (out_dir / "report.html").write_text(render_html(report), encoding="utf-8")
         (out_dir / "report.json").write_text(render_json(report), encoding="utf-8")
