@@ -31,8 +31,8 @@
 차별화: OSSDoctor(2025 수상, 프로젝트 건강도·기여 지원)와 달리 보안·라이선스 + 한국어 LLM 해설, 코드 외부 전송 없음(로컬).
 
 ### 사용 오픈소스 (전부 오픈소스)
-- syft 1.55.0 (Apache-2.0): SBOM 생성
-- grype 0.121.0 (Apache-2.0): 취약점 매칭
+- syft 1.56.0 (Apache-2.0): SBOM 생성
+- grype 0.121.1 (Apache-2.0): 취약점 매칭
 - Ollama + qwen3:8b (설치됨): 한국어 해설. 맥(M1 Pro) 느리면 RTX 3070(VRAM 8GB) PC에서 Ollama 서버 실행 → OLLAMA_HOST로 원격 호출
 - 웹 UI: 미정 (Streamlit 또는 단일 HTML 리포트)
 
