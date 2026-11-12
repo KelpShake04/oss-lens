@@ -133,6 +133,7 @@ def test_rejects_bad_scan_requests(web):
     assert status == 400 and "폴더를 찾을 수 없습니다" in body
     assert _scan(web, str(DEMO), top="많이")[0] == 400
     assert _req(f"{web}/api/scan", b"{broken", {"Content-Type": "application/json"})[0] == 400
+    assert _req(f"{web}/api/scan", b"{}", {"Content-Type": "application/json", "Content-Length": "-1"})[0] == 400
 
 
 def test_failed_scan_is_reported(web):

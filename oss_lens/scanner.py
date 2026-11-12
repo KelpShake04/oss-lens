@@ -89,7 +89,8 @@ _NPM_LOCKS = ("package-lock.json", "npm-shrinkwrap.json", "yarn.lock", "pnpm-loc
 def _walk(root: Path):
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in _SKIP_DIRS]
-        yield Path(dirpath), set(filenames)
+        # symlink 는 저장소 밖(홈의 비밀 파일 등)을 가리킬 수 있어 읽지 않는다
+        yield Path(dirpath), {f for f in filenames if not os.path.islink(os.path.join(dirpath, f))}
 
 
 def first_party_packages(root: Path) -> set[tuple[str, str]]:
@@ -149,10 +150,19 @@ def coverage_gaps(root: Path, limit: int = 5) -> list[str]:
 
 
 def clone_github(url: str) -> Path:
-    """GitHub 저장소를 임시 폴더에 얕게 복제. 호출자가 정리 책임."""
+    """GitHub 저장소를 임시 폴더에 얕게 복제. 성공하면 호출자가 정리 책임.
+
+    공개 저장소만 받는다: 저장된 자격증명·인증 프롬프트를 쓰지 않고, symlink 는 일반 파일로 받는다.
+    """
     git = shutil.which("git")
     if not git:
         raise ScanError("GitHub URL 입력에는 git이 필요합니다.")
     dest = Path(tempfile.mkdtemp(prefix="oss-lens-"))
-    _run([git, "clone", "--depth", "1", "--quiet", url, str(dest / "repo")], timeout=600)
+    try:
+        _run([git, "-c", "core.symlinks=false", "-c", "credential.helper=",
+              "clone", "--depth", "1", "--quiet", url, str(dest / "repo")],
+             timeout=600, env={"GIT_TERMINAL_PROMPT": "0"})
+    except BaseException:
+        shutil.rmtree(dest, ignore_errors=True)
+        raise
     return dest / "repo"

@@ -1,5 +1,9 @@
 import json
+import os
 
+import pytest
+
+from oss_lens import scanner
 from oss_lens.scanner import coverage_gaps, first_party_packages
 
 
@@ -57,3 +61,35 @@ def test_coverage_gaps_clean_project(tmp_path):
     _write(tmp_path / "package-lock.json", {})
     _write(tmp_path / "requirements.txt", "Django==4.2\n")
     assert coverage_gaps(tmp_path) == []
+
+
+def test_coverage_gaps_ignores_symlinked_files(tmp_path):
+    # 악성 저장소가 requirements.txt 를 홈의 비밀 파일로 가리켜도 내용을 읽지 않는다
+    secret = tmp_path / "secret"
+    _write(secret, "aws_secret_access_key = ABCD\n")
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "requirements.txt").symlink_to(secret)
+    assert coverage_gaps(repo) == []
+
+
+def test_clone_github_hardened_and_cleans_up(tmp_path, monkeypatch):
+    calls, made = [], []
+    real_mkdtemp = scanner.tempfile.mkdtemp
+
+    def fake_mkdtemp(**kw):
+        made.append(real_mkdtemp(dir=tmp_path, **kw))
+        return made[-1]
+
+    def fake_run(cmd, timeout, env=None):
+        calls.append((cmd, env))
+        raise scanner.ScanError("clone failed")
+
+    monkeypatch.setattr(scanner.tempfile, "mkdtemp", fake_mkdtemp)
+    monkeypatch.setattr(scanner, "_run", fake_run)
+    with pytest.raises(scanner.ScanError):
+        scanner.clone_github("https://github.com/owner/repo")
+    cmd, env = calls[0]
+    assert "core.symlinks=false" in cmd and "credential.helper=" in cmd
+    assert env == {"GIT_TERMINAL_PROMPT": "0"}
+    assert not any(os.path.exists(d) for d in made)

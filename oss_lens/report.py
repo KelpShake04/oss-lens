@@ -135,7 +135,7 @@ def _top_section(r: Report) -> str:
         return '<section><h2>먼저 고칠 취약점</h2><p class="empty">발견된 취약점이 없습니다.</p></section>'
     return f"""
 <section>
-  <h2>먼저 고칠 취약점 <small>위험 점수 상위 {len(items)}개</small></h2>
+  <h2>먼저 고칠 취약점 <small>패키지별 가장 위험한 {len(items)}개</small></h2>
   {''.join(items)}
 </section>"""
 

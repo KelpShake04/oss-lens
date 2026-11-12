@@ -10,6 +10,14 @@ FIXTURES = Path(__file__).parent / "fixtures"
 DEMO = ROOT / "examples" / "vulnerable-demo"
 
 
+def test_target_name_keeps_github_owner():
+    from oss_lens.pipeline import target_name
+    assert target_name("https://github.com/ownerA/app") == "ownerA_app"
+    assert target_name("https://github.com/ownerB/app.git/") == "ownerB_app"
+    assert target_name("vulnerable-demo") == "vulnerable-demo"
+    assert target_name("..") == "target"
+
+
 def _scan(tmp_path, *extra):
     return main([
         "scan", str(DEMO), "-o", str(tmp_path),
