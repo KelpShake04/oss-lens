@@ -59,6 +59,12 @@ class Vulnerability:
     def severity_ko(self) -> str:
         return SEVERITY_KO.get(self.severity, self.severity)
 
+    @property
+    def is_malware(self) -> bool:
+        """악성 패키지 권고 (GHSA 'Malware in …', OSV MAL-). CVSS·EPSS로 줄 세울 대상이 아님."""
+        return self.description.startswith("Malware in") or any(
+            i.startswith("MAL-") for i in [self.id, *self.aliases])
+
 
 @dataclass
 class LicenseFinding:
@@ -96,3 +102,5 @@ class Report:
     tool_versions: dict[str, str] = field(default_factory=dict)
     llm_model: str | None = None
     notes: list[str] = field(default_factory=list)
+    vuln_db_built: str | None = None  # grype DB 빌드 시각 (ISO)
+    vuln_scanned_at: str | None = None  # grype 실행 시각 (ISO, 저장 결과 재사용이면 그때 시각)

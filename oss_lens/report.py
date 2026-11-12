@@ -98,6 +98,8 @@ def _top_section(r: Report) -> str:
             meta.append(f'<span class="chip">악용 확률 {v.epss:.1%}</span>')
         if v.known_exploited:
             meta.append('<span class="chip kev">실제 공격 확인(KEV)</span>')
+        if v.is_malware:
+            meta.insert(0, '<span class="chip kev">악성 패키지 — 즉시 제거</span>')
         more = same_package_count(r.vulnerabilities, v)
         if more:
             meta.append(f'<span class="chip">같은 패키지 취약점 {more}건 더 (업그레이드 계획 참고)</span>')
@@ -264,10 +266,13 @@ def _notes(r: Report) -> str:
 def _footer(r: Report) -> str:
     tv = r.tool_versions
     llm = f"Ollama + {_e(r.llm_model)}" if r.llm_model else "사용 안 함 (규칙 기반 설명)"
+    dates = " · ".join(x for x in (
+        f"취약점 DB {_e(r.vuln_db_built[:10])}" if r.vuln_db_built else "",
+        f"검사 {_e(r.vuln_scanned_at[:16].replace('T', ' '))}" if r.vuln_scanned_at else "") if x)
     return f"""
 <footer>
   <p>사용 오픈소스: syft {_e(tv.get('syft', '?'))} (Apache-2.0, SBOM 생성) ·
-  grype {_e(tv.get('grype', '?'))} (Apache-2.0, 취약점 매칭) · 해설: {llm}</p>
+  grype {_e(tv.get('grype', '?'))} (Apache-2.0, 취약점 매칭) · 해설: {llm}</p>{f'<p>{dates}</p>' if dates else ''}
   <p>AI 해설은 참고용입니다. 조치 전 원문 권고(링크)를 확인하세요. 라이선스 판단은 법률 자문이 아닙니다.</p>
   <p>oss-lens {_e(__version__)} · 소스코드는 외부로 전송되지 않습니다.</p>
 </footer>"""
