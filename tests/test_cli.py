@@ -157,3 +157,10 @@ def test_scan_without_db_descriptor_has_no_db_note(tmp_path):
     data = json.loads((tmp_path / "vulnerable-demo" / "report.json").read_text(encoding="utf-8"))
     assert data["vuln_db_built"] is None
     assert not any("취약점 DB가" in n for n in data["notes"])
+
+
+def test_pct_never_rounds_up_to_certainty():
+    from oss_lens.report import _pct
+    assert _pct(0.99979) == "99.98%"
+    assert _pct(1.0) == "100.0%"
+    assert _pct(0.444) == "44.4%"

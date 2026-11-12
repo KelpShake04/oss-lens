@@ -38,6 +38,12 @@ def _sev_badge(sev: str) -> str:
     return f'<span class="badge {SEVERITY_CSS.get(sev, "neg")}">{_e(SEVERITY_KO.get(sev, sev))}</span>'
 
 
+def _pct(p: float) -> str:
+    """0.99979 를 '100.0%' 로 반올림해 확실한 것처럼 보이지 않게, 그때만 소수 둘째 자리."""
+    s = f"{p:.1%}"
+    return f"{p:.2%}" if s == "100.0%" and p < 1 else s
+
+
 def _link(url: str, text: str) -> str:
     if not url.startswith(("https://", "http://")):
         return _e(text)
@@ -95,7 +101,7 @@ def _top_section(r: Report) -> str:
         if v.cvss_score is not None:
             meta.append(f'<span class="chip">CVSS {v.cvss_score:.1f}</span>')
         if v.epss is not None:
-            meta.append(f'<span class="chip">악용 확률 {v.epss:.1%}</span>')
+            meta.append(f'<span class="chip">악용 확률 {_pct(v.epss)}</span>')
         if v.known_exploited:
             meta.append('<span class="chip kev">실제 공격 확인(KEV)</span>')
         if v.is_malware:
@@ -215,7 +221,7 @@ def _vuln_table(r: Report) -> str:
             f"<td>{_sev_badge(v.severity)}</td><td>{_vuln_link(v)}</td>"
             f"<td>{_e(v.package)}</td><td>{_e(v.version)}</td><td>{fix}</td>"
             f"<td class='n'>{'' if v.cvss_score is None else f'{v.cvss_score:.1f}'}</td>"
-            f"<td class='n'>{'' if v.epss is None else f'{v.epss:.1%}'}</td>"
+            f"<td class='n'>{'' if v.epss is None else _pct(v.epss)}</td>"
             f"<td class='n'>{v.score:.1f}</td><td class='loc'>{_e(', '.join(v.locations))}</td></tr>"
         )
     if not rows:
