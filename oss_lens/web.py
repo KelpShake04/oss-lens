@@ -285,7 +285,12 @@ class Handler(BaseHTTPRequestHandler):
         origin = self.headers.get("Origin")
         if origin and urlsplit(origin).netloc != self.headers.get("Host"):
             return self._json(403, {"error": "다른 사이트에서 보낸 요청은 받지 않습니다."})
-        length = int(self.headers.get("Content-Length") or 0)
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            length = -1
+        if length < 0:
+            return self._json(400, {"error": "잘못된 요청입니다."})
         if length > 10_000:
             return self._json(413, {"error": "요청이 너무 큽니다."})
         try:

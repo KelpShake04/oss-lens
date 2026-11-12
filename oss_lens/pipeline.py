@@ -54,9 +54,11 @@ class ScanResult:
 
 
 def target_name(target: str) -> str:
-    """결과 폴더 이름. GitHub URL 은 저장소 이름, 폴더는 폴더 이름."""
-    name = target.rstrip("/").split("/")[-1].removesuffix(".git")
-    return re.sub(r"[^\w.-]", "_", name) or "target"
+    """결과 폴더 이름. GitHub URL 은 owner_저장소 (다른 owner 의 같은 이름이 덮어쓰지 않게), 폴더는 폴더 이름."""
+    parts = target.strip().rstrip("/").removesuffix(".git").split("/")
+    name = "_".join(parts[-2:]) if is_github_url(target) else parts[-1]
+    name = re.sub(r"[^\w.-]", "_", name)
+    return name if name.strip(".") else "target"
 
 
 def is_github_url(target: str) -> bool:
