@@ -379,3 +379,9 @@ def test_ollama_client_roundtrip(ollama_server):
 
 def test_ollama_client_unreachable():
     assert "연결할 수 없습니다" in OllamaClient(host="127.0.0.1:1").check()
+
+
+@pytest.mark.parametrize("host", ["pc:abc", "localhost:99999"])
+def test_ollama_client_invalid_port_is_reported(host):
+    reason = OllamaClient(host=host).check()
+    assert isinstance(reason, str) and host in reason

@@ -18,6 +18,9 @@ def log(msg: str) -> None:
 
 
 def cmd_scan(args: argparse.Namespace) -> int:
+    if args.top < 1:
+        log("오류: --top 은 1 이상이어야 합니다")
+        return 2
     opts = pipeline.ScanOptions(
         target=args.target, out=args.out, top=args.top, use_llm=not args.no_llm, model=args.model,
         ollama_host=args.ollama_host, project_license=args.project_license,
@@ -25,7 +28,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
     )
     try:
         result = pipeline.run(opts, progress=lambda msg, frac: log(msg) if frac < 1 else None)
-    except scanner.ScanError as e:
+    except (scanner.ScanError, OSError, ValueError) as e:
         log(f"오류: {e}")
         return 1
     print(result.summary())
@@ -60,21 +63,28 @@ def cmd_show(args: argparse.Namespace) -> int:
     if not path.is_file():
         log(f"리포트가 없습니다: {path} (먼저 oss-lens scan 을 실행하세요)")
         return 1
-    r = json.loads(path.read_text(encoding="utf-8"))
-    all_vulns = [Vulnerability(**v) for v in r["vulnerabilities"]]
-    by_key = {risk.vuln_key(v): v for v in all_vulns}
-    print(f"{r['target']} · 패키지 {len(r['packages'])}개 · 취약점 {len(r['vulnerabilities'])}건")
-    for note in r.get("notes", []):
-        print(f"! {note}")
-    for i, key in enumerate(r["top_keys"], 1):
-        v, e = by_key[key], r["explanations"][key]
-        desc = v.description
-        more = risk.same_package_count(all_vulns, v)
-        print(f"\n[{i}] {v.package} {v.version} · {v.id} · {SEVERITY_KO.get(v.severity, v.severity)}"
-              f" · {'AI' if e['source'] == 'llm' else '규칙'}" + (f" · 같은 패키지 {more}건 더" if more else ""))
-        if args.source:
-            print(f"  원문: {desc[:200] + ('…' if len(desc) > 200 else '')}")
-        print(f"  요약: {e['summary']}\n  영향: {e['impact']}\n  조치: {e['action']}")
+    try:
+        r = json.loads(path.read_text(encoding="utf-8"))
+        all_vulns = [Vulnerability(**v) for v in r["vulnerabilities"]]
+        by_key = {risk.vuln_key(v): v for v in all_vulns}
+        print(f"{r['target']} · 패키지 {len(r['packages'])}개 · 취약점 {len(r['vulnerabilities'])}건")
+        for note in r.get("notes", []):
+            print(f"! {note}")
+        for i, key in enumerate(r["top_keys"], 1):
+            v, e = by_key[key], r["explanations"][key]
+            desc = v.description
+            more = risk.same_package_count(all_vulns, v)
+            print(f"\n[{i}] {v.package} {v.version} · {v.id} · {SEVERITY_KO.get(v.severity, v.severity)}"
+                  f" · {'AI' if e['source'] == 'llm' else '규칙'}" + (f" · 같은 패키지 {more}건 더" if more else ""))
+            if args.source:
+                print(f"  원문: {desc[:200] + ('…' if len(desc) > 200 else '')}")
+            print(f"  요약: {e['summary']}\n  영향: {e['impact']}\n  조치: {e['action']}")
+    except OSError as e:
+        log(f"오류: {e}")
+        return 1
+    except (ValueError, KeyError, TypeError, AttributeError):
+        log(f"오류: 리포트 형식이 올바르지 않습니다: {path}")
+        return 1
     return 0
 
 

@@ -186,7 +186,12 @@ def normalize_host(host: str | None) -> str:
 
 class OllamaClient:
     def __init__(self, host: str | None = None, model: str = DEFAULT_MODEL, timeout: int = 300):
-        self.host = normalize_host(host if host is not None else os.environ.get("OLLAMA_HOST"))
+        raw = host if host is not None else os.environ.get("OLLAMA_HOST")
+        self._host_error = None
+        try:
+            self.host = normalize_host(raw)
+        except ValueError as e:  # 잘못된 포트 (예: 'pc:abc')
+            self.host, self._host_error = str(raw), e
         self.model = model
         self.timeout = timeout
         # Ollama 는 로컬/사내망 서버이므로 시스템 프록시를 거치지 않는다
@@ -205,6 +210,8 @@ class OllamaClient:
 
     def check(self) -> str | None:
         """사용 불가 사유를 반환. 사용 가능하면 None."""
+        if self._host_error:
+            return f"Ollama 주소({self.host})가 올바르지 않습니다: {self._host_error}"
         try:
             models = self.available_models()
         except (urllib.error.URLError, OSError, ValueError) as e:

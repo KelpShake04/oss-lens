@@ -88,7 +88,7 @@ class App:
                 raise ValueError(f"폴더를 찾을 수 없습니다: {target}")
         try:
             top = min(max(int(data.get("top", 5)), 1), 20)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             raise ValueError("AI 해설 개수는 숫자여야 합니다.") from None
         opts = pipeline.ScanOptions(
             target=target, out=str(self.out_dir), top=top, use_llm=bool(data.get("use_llm", True)),
@@ -212,6 +212,7 @@ class App:
 class Handler(BaseHTTPRequestHandler):
     server_version = f"oss-lens/{__version__}"
     app: App  # make_server 가 채운다
+    timeout = 30  # 헤더만 보내고 멈춘 클라이언트가 스레드를 붙잡지 못하게
 
     def log_message(self, format, *args):  # 터미널을 조용히
         pass

@@ -11,7 +11,7 @@
 
 ## 30초 시작하기
 ```bash
-brew install syft grype && brew install ollama && ollama pull qwen3:8b
+brew install syft grype && brew install ollama && brew services start ollama && ollama pull qwen3:8b
 git clone https://github.com/KelpShake04/oss-lens.git && cd oss-lens
 python3 -m oss_lens scan examples/vulnerable-demo     # 결과: out/vulnerable-demo/report.html
 ```
@@ -53,7 +53,7 @@ docker run --rm -p 127.0.0.1:8765:8765 -v oss-lens-grype-db:/cache/grype \
 ## 설치
 ```bash
 brew install syft grype                       # SBOM·취약점 도구
-brew install ollama && ollama pull qwen3:8b   # (선택) 한국어 AI 해설
+brew install ollama && brew services start ollama && ollama pull qwen3:8b   # (선택) 한국어 AI 해설
 
 git clone https://github.com/KelpShake04/oss-lens.git
 cd oss-lens                                   # 이후 명령은 모두 이 폴더에서
