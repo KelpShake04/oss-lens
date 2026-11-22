@@ -93,3 +93,27 @@ def test_clone_github_hardened_and_cleans_up(tmp_path, monkeypatch):
     assert "core.symlinks=false" in cmd and "credential.helper=" in cmd
     assert env == {"GIT_TERMINAL_PROMPT": "0"}
     assert not any(os.path.exists(d) for d in made)
+
+
+def test_clone_github_missing_repo_gets_friendly_error(tmp_path, monkeypatch):
+    made = []
+    real_mkdtemp = scanner.tempfile.mkdtemp
+
+    def fake_mkdtemp(**kw):
+        made.append(real_mkdtemp(dir=tmp_path, **kw))
+        return made[-1]
+
+    def fake_run(cmd, timeout, env=None):
+        raise scanner.ScanError("fatal: could not read Username for 'https://github.com'")
+
+    monkeypatch.setattr(scanner.tempfile, "mkdtemp", fake_mkdtemp)
+    monkeypatch.setattr(scanner, "_run", fake_run)
+    with pytest.raises(scanner.ScanError, match="비공개입니다"):
+        scanner.clone_github("https://github.com/owner/repo")
+    assert not any(os.path.exists(d) for d in made)
+
+
+@pytest.mark.parametrize("content", ["[]", '"x"', '{"packages": []}', '{"packages": {"a": [], "b": 1}}'])
+def test_first_party_packages_ignores_odd_lock_shapes(tmp_path, content):
+    _write(tmp_path / "package-lock.json", content)
+    assert first_party_packages(tmp_path) == set()

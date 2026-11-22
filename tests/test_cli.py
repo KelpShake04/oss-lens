@@ -1,6 +1,9 @@
 import json
 from pathlib import Path
 
+import pytest
+
+from oss_lens import pipeline
 from oss_lens.cli import main
 from oss_lens.models import Explanation, Package, Report, Vulnerability
 from oss_lens.report import render_html
@@ -164,3 +167,45 @@ def test_pct_never_rounds_up_to_certainty():
     assert _pct(0.99979) == "99.98%"
     assert _pct(1.0) == "100.0%"
     assert _pct(0.444) == "44.4%"
+
+
+def test_scan_reports_unreadable_sbom_as_error(tmp_path, capsys):
+    bad = tmp_path / "bad.json"
+    bad.write_text("{broken", encoding="utf-8")
+    for sbom in (tmp_path / "nope.json", bad):
+        assert main(["scan", str(DEMO), "-o", str(tmp_path / "out"), "--no-llm", "--sbom", str(sbom)]) == 1
+        assert "오류:" in capsys.readouterr().err
+
+
+def test_show_rejects_malformed_report(tmp_path, capsys):
+    (tmp_path / "report.json").write_text("{}", encoding="utf-8")
+    assert main(["show", str(tmp_path)]) == 1
+    assert "오류:" in capsys.readouterr().err
+
+
+def test_scan_rejects_nonpositive_top(tmp_path, capsys):
+    assert _scan(tmp_path, "--top", "0") == 2
+    assert "--top" in capsys.readouterr().err
+    assert _scan(tmp_path, "--top", "-2") == 2
+
+
+def test_scan_with_invalid_ollama_host_falls_back(tmp_path):
+    assert main(["scan", str(DEMO), "-o", str(tmp_path), "--ollama-host", "pc:abc",
+                 "--sbom", str(FIXTURES / "syft-demo.json"),
+                 "--grype-json", str(FIXTURES / "grype-demo.json")]) == 0
+    data = json.loads((tmp_path / "vulnerable-demo" / "report.json").read_text(encoding="utf-8"))
+    assert any("규칙 기반 설명으로 대체" in n for n in data["notes"])
+    assert all(e["source"] == "rule" for e in data["explanations"].values())
+
+
+@pytest.mark.parametrize("url", [
+    "http://github.com/a/b", "https://github.com.evil.com/a/b", "https://github.com@evil.com/a/b",
+    "https://github.com/a/b/c", "git@github.com:a/b", "file:///etc", "https://github.com/a/b?x=1",
+])
+def test_is_github_url_rejects(url):
+    assert not pipeline.is_github_url(url)
+
+
+@pytest.mark.parametrize("url", ["https://github.com/a/b", "https://github.com/a/b.git", "https://github.com/a/b/"])
+def test_is_github_url_accepts(url):
+    assert pipeline.is_github_url(url)

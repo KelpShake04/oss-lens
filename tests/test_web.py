@@ -180,3 +180,12 @@ def test_view_only_mode(tmp_path):
 ])
 def test_is_loopback(host, expected):
     assert is_loopback(host) is expected
+
+
+def test_scan_rejects_infinite_top(web):
+    assert _scan(web, str(DEMO), top=float("inf"))[0] == 400
+
+
+def test_handler_has_socket_timeout():
+    from oss_lens.web import Handler
+    assert 0 < Handler.timeout <= 60

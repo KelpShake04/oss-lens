@@ -108,10 +108,13 @@ def first_party_packages(root: Path) -> set[tuple[str, str]]:
                 data = json.loads((d / lock).read_text(encoding="utf-8"))
             except (OSError, ValueError):
                 continue
+            if not isinstance(data, dict):
+                continue
             if data.get("name"):
                 found.add((data["name"], data.get("version", "")))
-            for key, entry in (data.get("packages") or {}).items():
-                if key and "node_modules/" not in key and entry.get("name"):  # 워크스페이스
+            packages = data.get("packages")
+            for key, entry in (packages.items() if isinstance(packages, dict) else ()):
+                if key and "node_modules/" not in key and isinstance(entry, dict) and entry.get("name"):  # 워크스페이스
                     found.add((entry["name"], entry.get("version", "")))
     return found
 
@@ -162,7 +165,10 @@ def clone_github(url: str) -> Path:
         _run([git, "-c", "core.symlinks=false", "-c", "credential.helper=",
               "clone", "--depth", "1", "--quiet", url, str(dest / "repo")],
              timeout=600, env={"GIT_TERMINAL_PROMPT": "0"})
-    except BaseException:
+    except BaseException as e:
         shutil.rmtree(dest, ignore_errors=True)
+        if isinstance(e, ScanError) and any(
+                s in str(e) for s in ("could not read Username", "Repository not found", "not found")):
+            raise ScanError("저장소를 찾을 수 없거나 비공개입니다. 공개 GitHub 저장소만 검사할 수 있습니다.") from e
         raise
     return dest / "repo"
